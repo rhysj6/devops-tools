@@ -13,7 +13,7 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 	v := viper.New()
 
 	cfgFlag := cmd.Flags().Lookup("config")
-	if cfgFlag != nil {
+	if cfgFlag != nil && cfgFlag.Value.String() != "" {
 		cfgPath := cfgFlag.Value.String()
 		v.SetConfigFile(cfgPath)
 	} else {
@@ -21,9 +21,8 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 		v.AddConfigPath(filepath.Join(home, ".devops-tools"))
 		v.AddConfigPath(".")
 		v.SetConfigName("config")
+		v.SetConfigType("yaml")
 	}
-
-	v.SetConfigType("yaml")
 
 	v.SetEnvPrefix("DEVOPS_TOOLS_")
 	v.AutomaticEnv()

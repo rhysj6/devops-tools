@@ -11,7 +11,7 @@ func GetCommand() *cobra.Command {
 		Aliases: []string{"do", "dot"},
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "~/.devops-tools/config.yaml", "Path to config file")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "Path to config file")
 	rootCmd.MarkFlagFilename("config", "yaml")
 
 	addPfpCommands(rootCmd)
