@@ -1,0 +1,164 @@
+Checking out git https://github.com/rhysj6/homelab.git into /var/jenkins_home/workspace/Ansible/Initial Setup@script/1ddb9ff0cfac91911f938ba3f97b175daee2e2db8fd5341b574ff6aec99a9a2a to read ansible/linux/InitialSetup.Jenkinsfile
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+using credential github
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/Ansible/Initial Setup@script/1ddb9ff0cfac91911f938ba3f97b175daee2e2db8fd5341b574ff6aec99a9a2a/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/rhysj6/homelab.git # timeout=10
+Fetching upstream changes from https://github.com/rhysj6/homelab.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+using GIT_ASKPASS to set credentials GitHub PAT
+ > git fetch --tags --force --progress -- https://github.com/rhysj6/homelab.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse origin/main^{commit} # timeout=10
+Checking out Revision 0af30dea7e5e230ac418af0bcc8057138ac455f4 (origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 0af30dea7e5e230ac418af0bcc8057138ac455f4 # timeout=10
+Commit message: "Update Cilium API version from v2alpha1 to v2 in Kubernetes manifests"
+First time build. Skipping changelog.
+[Pipeline] Start of Pipeline
+[Pipeline] readTrusted
+Obtained ansible/jenkins-pod.yaml from git https://github.com/rhysj6/homelab.git
+[Pipeline] podTemplate
+[Pipeline] {
+[Pipeline] node
+Created Pod: kubernetes jenkins/ansible-initial-setup-4-d3fl3-brlpw-tvbgx
+[PodInfo] jenkins/ansible-initial-setup-4-d3fl3-brlpw-tvbgx
+	Container [ansible] waiting [ContainerCreating] No message
+	Container [jnlp] waiting [ContainerCreating] No message
+	Pod [Pending][ContainersNotReady] containers with unready status: [ansible jnlp]
+Still waiting to schedule task
+‘ansible-initial-setup-4-d3fl3-brlpw-tvbgx’ is offline
+Agent ansible-initial-setup-4-d3fl3-brlpw-tvbgx is provisioned from template Ansible_Initial_Setup_4-d3fl3-brlpw
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    kubernetes.jenkins.io/last-refresh: "1771112204247"
+    buildUrl: "http://jenkins.jenkins.svc.cluster.local:8080/job/Ansible/job/Initial%20Setup/4/"
+    runUrl: "job/Ansible/job/Initial%20Setup/4/"
+  labels:
+    jenkins/jenkins-jenkins-agent: "true"
+    jenkins/label-digest: "8885a876a0a38bbae512599a996f2c631df9e74d"
+    jenkins/label: "Ansible_Initial_Setup_4-d3fl3"
+    kubernetes.jenkins.io/controller: "http___jenkins_jenkins_svc_cluster_local_8080x"
+  name: "ansible-initial-setup-4-d3fl3-brlpw-tvbgx"
+  namespace: "jenkins"
+spec:
+  containers:
+  - command:
+    - "/bin/sh"
+    - "-c"
+    - "while true; do sleep 30; done;"
+    image: "rhysj6/ansible-agent:latest"
+    name: "ansible"
+    securityContext:
+      runAsUser: 0
+    tty: true
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - env:
+    - name: "JENKINS_SECRET"
+      value: "********"
+    - name: "JENKINS_TUNNEL"
+      value: "jenkins-agent.jenkins.svc.cluster.local:50000"
+    - name: "JENKINS_AGENT_NAME"
+      value: "ansible-initial-setup-4-d3fl3-brlpw-tvbgx"
+    - name: "REMOTING_OPTS"
+      value: "-noReconnectAfter 1d"
+    - name: "JENKINS_NAME"
+      value: "ansible-initial-setup-4-d3fl3-brlpw-tvbgx"
+    - name: "JENKINS_AGENT_WORKDIR"
+      value: "/home/jenkins/agent"
+    - name: "JENKINS_URL"
+      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+    image: "jenkins/inbound-agent:3355.v388858a_47b_33-3-jdk21"
+    name: "jnlp"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  nodeSelector:
+    kubernetes.io/os: "linux"
+  restartPolicy: "Never"
+  volumes:
+  - emptyDir:
+      medium: ""
+    name: "workspace-volume"
+Running on ansible-initial-setup-4-d3fl3-brlpw-tvbgx in /home/jenkins/agent/workspace/Ansible/Initial Setup
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+using credential github
+Cloning the remote Git repository
+Cloning repository https://github.com/rhysj6/homelab.git
+ > git init /home/jenkins/agent/workspace/Ansible/Initial Setup # timeout=10
+Fetching upstream changes from https://github.com/rhysj6/homelab.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+using GIT_ASKPASS to set credentials GitHub PAT
+ > git fetch --tags --force --progress -- https://github.com/rhysj6/homelab.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+Checking out Revision 0af30dea7e5e230ac418af0bcc8057138ac455f4 (origin/main)
+ > git config remote.origin.url https://github.com/rhysj6/homelab.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse origin/main^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 0af30dea7e5e230ac418af0bcc8057138ac455f4 # timeout=10
+Commit message: "Update Cilium API version from v2alpha1 to v2 in Kubernetes manifests"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Initalisation)
+[Pipeline] dir
+Running in /home/jenkins/agent/workspace/Ansible/Initial Setup/private
+[Pipeline] {
+[Pipeline] checkout
+The recommended git tool is: NONE
+using credential github
+Cloning the remote Git repository
+Avoid second fetch
+Checking out Revision 135ce33c8362c786df5ee4ade7b291b5d223b602 (origin/main)
+Cloning repository https://github.com/rhysj6/homelab-private.git
+ > git init /home/jenkins/agent/workspace/Ansible/Initial Setup/private # timeout=10
+Fetching upstream changes from https://github.com/rhysj6/homelab-private.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+using GIT_ASKPASS to set credentials GitHub PAT
+ > git fetch --tags --force --progress -- https://github.com/rhysj6/homelab-private.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url https://github.com/rhysj6/homelab-private.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse origin/main^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 135ce33c8362c786df5ee4ade7b291b5d223b602 # timeout=10
+Commit message: "Added semaphore to inventory"
+First time build. Skipping changelog.
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Playbook)
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+ERROR: INFISICAL_CLIENT_SECRET
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // podTemplate
+Finished: FAILURE
+[Pipeline] End of Pipeline

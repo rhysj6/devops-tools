@@ -1,0 +1,9 @@
+pfp:
+  rules:
+    - name: "Missing infisical environment variable"
+      patterns:
+        - contains: "INFISICAL_CLIENT_SECRET"
+          regex: ".*INFISICAL_CLIENT_SECRET.*"
+        - contains: "FAILURE"
+      maxlines: 75
+      solution: "Set the INFISICAL_CLIENT_SECRET environment variable to the correct value."
