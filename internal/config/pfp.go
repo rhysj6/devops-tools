@@ -38,9 +38,9 @@ type LogParserConfig struct {
 }
 
 type JenkinsConfig struct {
-	Url      string `mapstructure:"url"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Url      string `mapstructure:"url"`      // DEVOPS_TOOLS_PFP_JENKINS_URL
+	Username string `mapstructure:"username"` // DEVOPS_TOOLS_PFP_JENKINS_USERNAME
+	Password string `mapstructure:"password"` // DEVOPS_TOOLS_PFP_JENKINS_PASSWORD
 }
 
 func (c *LogParserConfig) CompileRegex() error {
