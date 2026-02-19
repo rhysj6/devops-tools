@@ -65,7 +65,7 @@ func runPfp(cmd *cobra.Command, r io.Reader) error {
 		return err
 	}
 	m, s, e := pfp.Parse(r, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
-	pfp.TextOutput(m, s)
+	pfp.TextOutput(os.Stdout, m, s)
 
 	if e != nil {
 		return e
