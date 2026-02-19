@@ -17,7 +17,7 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
-func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats) {
+func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -38,6 +38,10 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats) {
 		line := &LogLine{
 			Content:    scanner.Text(),
 			LineNumber: lineNo,
+		}
+
+		if err := scanner.Err(); err != nil {
+			return nil, stats, fmt.Errorf("Scanner error: %w \n Log line number %v:", err, lineNo)
 		}
 
 		activeMatchers = PurgeInactiveMatchers(lineNo, activeMatchers)
@@ -71,7 +75,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats) {
 	stats.LinesParsed = lineNo
 	stats.CompleteMatches = len(matches)
 
-	return matches, stats
+	return matches, stats, nil
 }
 
 func TextOutput(matches []*ParseMatch, stats Stats) {
