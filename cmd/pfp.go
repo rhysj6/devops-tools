@@ -42,15 +42,7 @@ func addPfpCommands(rootCmd *cobra.Command) {
 		Short: "Read in a file for failure parsing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := args[0]
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			r := bufio.NewReader(file)
-
-			return runPfp(cmd, r)
+			return runPfp(cmd, "file", args)
 		},
 	}
 	pfpCmd.AddCommand(fileParseCmd)
@@ -58,12 +50,32 @@ func addPfpCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(pfpCmd)
 }
 
-func runPfp(cmd *cobra.Command, r io.Reader) error {
+func loadFile(path string) (io.ReadCloser, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
 
+func runPfp(cmd *cobra.Command, source string, args []string) error {
 	cfg, err := config.LoadConfig(cmd)
 	if err != nil {
 		return err
 	}
+
+	var r io.Reader
+
+	switch source {
+	case "file":
+		f, e := loadFile(args[0])
+		if e != nil {
+			return e
+		}
+		defer f.Close()
+		r = bufio.NewReader(f)
+	}
+
 	m, s, e := pfp.Parse(r, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
 	pfp.TextOutput(os.Stdout, m, s)
 
