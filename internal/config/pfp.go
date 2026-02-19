@@ -31,11 +31,16 @@ func (c *Config) SetupConfig() error {
 }
 
 type LogParserConfig struct {
-	Rules         []*pfp.Rule `mapstructure:"rules"`
-	LogFilePath   string
-	JenkinsJobUrl string
-	Output        string `mapstructure:"output"`
-	MaxMatches    int    `mapstructure:"maxmatches"`
+	Rules      []*pfp.Rule   `mapstructure:"rules"`
+	Output     string        `mapstructure:"output"`
+	MaxMatches int           `mapstructure:"maxmatches"`
+	Jenkins    JenkinsConfig `mapstructure:"jenkins"`
+}
+
+type JenkinsConfig struct {
+	Url      string `mapstructure:"url"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 func (c *LogParserConfig) CompileRegex() error {
