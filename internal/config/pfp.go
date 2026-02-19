@@ -4,11 +4,13 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/rhysj6/devops-tools/internal/jenkins"
 	"github.com/rhysj6/devops-tools/internal/pfp"
 )
 
 type Config struct {
-	Pfp *LogParserConfig `mapstructure:"pfp"`
+	Pfp     *LogParserConfig      `mapstructure:"pfp"`
+	Jenkins jenkins.JenkinsClient `mapstructure:"jenkins"`
 }
 
 func (c *Config) SetupConfig() error {
@@ -31,16 +33,9 @@ func (c *Config) SetupConfig() error {
 }
 
 type LogParserConfig struct {
-	Rules      []*pfp.Rule   `mapstructure:"rules"`
-	Output     string        `mapstructure:"output"`
-	MaxMatches int           `mapstructure:"maxmatches"`
-	Jenkins    JenkinsConfig `mapstructure:"jenkins"`
-}
-
-type JenkinsConfig struct {
-	Url      string `mapstructure:"url"`      // DEVOPS_TOOLS_PFP_JENKINS_URL
-	Username string `mapstructure:"username"` // DEVOPS_TOOLS_PFP_JENKINS_USERNAME
-	Password string `mapstructure:"password"` // DEVOPS_TOOLS_PFP_JENKINS_PASSWORD
+	Rules      []*pfp.Rule `mapstructure:"rules"`
+	Output     string      `mapstructure:"output"`
+	MaxMatches int         `mapstructure:"maxmatches"`
 }
 
 func (c *LogParserConfig) CompileRegex() error {
