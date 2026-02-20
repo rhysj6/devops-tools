@@ -7,10 +7,6 @@ import (
 	"github.com/rhysj6/devops-tools/internal/pfp"
 )
 
-type Config struct {
-	Pfp *LogParserConfig `mapstructure:"pfp"`
-}
-
 func (c *Config) SetupConfig() error {
 	if c.Pfp != nil {
 		err := c.Pfp.CompileRegex()
@@ -31,16 +27,9 @@ func (c *Config) SetupConfig() error {
 }
 
 type LogParserConfig struct {
-	Rules      []*pfp.Rule   `mapstructure:"rules"`
-	Output     string        `mapstructure:"output"`
-	MaxMatches int           `mapstructure:"maxmatches"`
-	Jenkins    JenkinsConfig `mapstructure:"jenkins"`
-}
-
-type JenkinsConfig struct {
-	Url      string `mapstructure:"url"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Rules      []*pfp.Rule `mapstructure:"rules"`
+	Output     string      `mapstructure:"output"`
+	MaxMatches int         `mapstructure:"maxmatches"`
 }
 
 func (c *LogParserConfig) CompileRegex() error {

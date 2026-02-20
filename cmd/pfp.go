@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
@@ -42,29 +44,77 @@ func addPfpCommands(rootCmd *cobra.Command) {
 		Short: "Read in a file for failure parsing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := args[0]
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			r := bufio.NewReader(file)
-
-			return runPfp(cmd, r)
+			return runPfp(cmd, "file", args)
 		},
 	}
 	pfpCmd.AddCommand(fileParseCmd)
 
+	jenkinsParseCmd := &cobra.Command{
+		Use:   "jenkins [url|job_name] [build_no]",
+		Short: "Reads logs from Jenkins for failure parsing",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runPfp(cmd, "jenkins", args)
+		},
+	}
+	pfpCmd.AddCommand(jenkinsParseCmd)
+
 	rootCmd.AddCommand(pfpCmd)
 }
 
-func runPfp(cmd *cobra.Command, r io.Reader) error {
+func loadFile(path string) (io.ReadCloser, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
 
+func runPfp(cmd *cobra.Command, source string, args []string) error {
 	cfg, err := config.LoadConfig(cmd)
 	if err != nil {
 		return err
 	}
-	m, s, e := pfp.Parse(r, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	if cfg.Pfp == nil {
+		return fmt.Errorf("pfp config is not set")
+	}
+
+	var rc io.ReadCloser
+
+	switch source {
+	case "file":
+		rc, err = loadFile(args[0])
+		if err != nil {
+			return err
+		}
+	case "jenkins":
+		if cfg.Jenkins.URL == "" {
+			return fmt.Errorf("Jenkins URL is not set")
+		}
+		var jobName string
+		var buildNumber int
+		if len(args) == 1 {
+			jobName, buildNumber, err = cfg.Jenkins.GetJobNameAndNumberFromURL(args[0])
+			if err != nil {
+				return err
+			}
+		} else {
+			jobName = args[0]
+			buildNumber, err = strconv.Atoi(args[1])
+			if err != nil {
+				return err
+			}
+		}
+		rc, err = cfg.Jenkins.GetBuildLogs(jobName, buildNumber)
+		if err != nil {
+			return err
+		}
+	}
+
+	defer rc.Close()
+	re := bufio.NewReader(rc)
+
+	m, s, e := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
 	pfp.TextOutput(os.Stdout, m, s)
 
 	if e != nil {
