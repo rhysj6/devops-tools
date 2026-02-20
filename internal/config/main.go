@@ -45,7 +45,7 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 	v.BindPFlag("pfp.output", cmd.Flags().Lookup("output"))
 	v.BindEnv("jenkins.url", "DEVOPS_TOOLS_JENKINS_URL", "HUDSON_URL")
 	v.BindEnv("jenkins.username")
-	v.BindEnv("jenkins.password", "DEVOPS_TOOLS_JENKINS_PASSWORD")
+	v.BindEnv("jenkins.password")
 
 	var config Config
 
