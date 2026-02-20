@@ -17,7 +17,7 @@ func TestIsJobURL(t *testing.T) {
 		want  bool
 	}{
 		{
-			name:  "matches job url",
+			name:  "matches job URL",
 			input: "https://jenkins.example.com/job/my-job/123",
 			want:  true,
 		},
@@ -54,21 +54,21 @@ func TestGetJobNameAndNumberFromURL(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name:            "parses valid job url",
+			name:            "parses valid job URL",
 			input:           "https://jenkins.example.com/job/my-job/123",
 			wantName:        "my-job",
 			wantBuildNumber: 123,
 			wantErr:         false,
 		},
 		{
-			name:            "parses url encoded job name",
+			name:            "parses URL encoded job name",
 			input:           "https://jenkins.example.com/job/My+Job/456",
 			wantName:        "My Job",
 			wantBuildNumber: 456,
 			wantErr:         false,
 		},
 		{
-			name:    "returns error for non job url",
+			name:    "returns error for non job URL",
 			input:   "https://jenkins.example.com/view/all",
 			wantErr: true,
 		},
