@@ -33,16 +33,27 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 
 	s := strings.TrimPrefix(u, jenkinsURL+"/job/")
 
-	urlParts := strings.Split(s, "/")
+	folderPathParts := strings.Split(s, "/job/")
+
+	if len(folderPathParts) > 1 {
+		for i, folder := range folderPathParts {
+			if i+1 == len(folderPathParts) {
+				continue
+			}
+			name += folder + "/"
+		}
+	}
+
+	urlParts := strings.Split(folderPathParts[len(folderPathParts)-1], "/")
 	if len(urlParts) < 2 || urlParts[0] == "" || urlParts[1] == "" {
 		return "", 0, fmt.Errorf("%v is not a valid Jenkins job build url", u)
 	}
 
-	name, err = url.QueryUnescape(urlParts[0])
-
+	jobName, err := url.QueryUnescape(urlParts[0])
 	if err != nil {
 		return "", 0, err
 	}
+	name += jobName
 
 	buildNumber, err = strconv.Atoi(urlParts[1])
 	if err != nil {
@@ -64,8 +75,14 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 		return nil, fmt.Errorf("build number must be greater than zero")
 	}
 
-	encodedJobName := url.PathEscape(jobName)
-	logURL := fmt.Sprintf("%s/job/%s/%d/consoleText", strings.TrimSuffix(j.URL, "/"), encodedJobName, buildNumber)
+	var baseUrl strings.Builder
+	baseUrl.WriteString(strings.TrimSuffix(j.URL, "/"))
+
+	for pathPart := range strings.SplitSeq(jobName, "/") {
+		baseUrl.WriteString("/job/" + url.PathEscape(pathPart))
+	}
+
+	logURL := fmt.Sprintf("%s/%d/consoleText", baseUrl.String(), buildNumber)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logURL, nil)
 	if err != nil {
 		return nil, err
