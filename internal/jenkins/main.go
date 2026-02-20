@@ -40,7 +40,11 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 			if i+1 == len(folderPathParts) {
 				continue
 			}
-			name += folder + "/"
+			decodedFolder, err := url.QueryUnescape(folder)
+			if err != nil {
+				return "", 0, err
+			}
+			name += decodedFolder + "/"
 		}
 	}
 

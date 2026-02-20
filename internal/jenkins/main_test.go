@@ -85,8 +85,8 @@ func TestGetJobNameAndNumberFromURL(t *testing.T) {
 		},
 		{
 			name:            "parses URL with job within multiple folders",
-			input:           "https://jenkins.example.com/job/ansible/job/linux/job/setup/456",
-			wantName:        "ansible/linux/setup",
+			input:           "https://jenkins.example.com/job/old%20ansible/job/linux/job/setup/456",
+			wantName:        "old ansible/linux/setup",
 			wantBuildNumber: 456,
 			wantErr:         false,
 		},
@@ -177,7 +177,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 	t.Run("handles jenkins folder paths correctly", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path != "/job/ansible/job/linux/job/my-job/123/consoleText" {
+			if r.URL.Path != "/job/old ansible/job/linux/job/my-job/123/consoleText" {
 				t.Fatalf("unexpected path: %s", r.URL.Path)
 			}
 
@@ -188,7 +188,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
 
-		reader, err := client.GetBuildLogs("ansible/linux/my-job", 123)
+		reader, err := client.GetBuildLogs("old ansible/linux/my-job", 123)
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
