@@ -47,7 +47,7 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 		return "", 0, e
 	}
 
-	return name, buildNumber, e
+	return name, buildNumber, nil
 }
 
 func (j JenkinsClient) GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error) {
