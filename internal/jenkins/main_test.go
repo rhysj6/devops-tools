@@ -135,16 +135,10 @@ func TestGetJobNameAndNumberFromURL(t *testing.T) {
 }
 
 func TestGetBuildLogs(t *testing.T) {
-	t.Run("returns console text for valid credentials", func(t *testing.T) {
+	t.Run("returns console text", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path != "/job/my-job/123/consoleText" {
 				t.Fatalf("unexpected path: %s", r.URL.Path)
-			}
-
-			username, password, ok := r.BasicAuth()
-			if !ok || username != "user" || password != "pass" {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
 			}
 
 			w.WriteHeader(http.StatusOK)
@@ -152,11 +146,7 @@ func TestGetBuildLogs(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := JenkinsClient{
-			URL:      server.URL,
-			Username: "user",
-			Password: "pass",
-		}
+		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
 
 		reader, err := client.GetBuildLogs("my-job", 123)
 		if err != nil {
@@ -193,6 +183,25 @@ func TestGetBuildLogs(t *testing.T) {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
 		reader.Close()
+	})
+
+	t.Run("returns no error for correct credentials", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			username, password, ok := r.BasicAuth()
+			if !ok || username != "u" || password != "p" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
+
+		_, err := client.GetBuildLogs("my-job", 123)
+		if err != nil {
+			t.Fatalf("GetBuildLogs returned error: %v", err)
+		}
 	})
 
 	t.Run("returns unauthorized error for incorrect credentials", func(t *testing.T) {
