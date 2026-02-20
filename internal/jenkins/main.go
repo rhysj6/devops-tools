@@ -20,7 +20,8 @@ type JenkinsClient struct {
 }
 
 func (j JenkinsClient) IsJobURL(s string) bool {
-	return strings.HasPrefix(s, j.URL+"/job/")
+	jenkinsURL := strings.TrimSuffix(j.URL, "/")
+	return strings.HasPrefix(s, jenkinsURL+"/job/")
 }
 
 func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, err error) {
@@ -28,8 +29,9 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 	if !j.IsJobURL(u) {
 		return "", 0, fmt.Errorf("%v is not a Jenkins job url", u)
 	}
+	jenkinsURL := strings.TrimSuffix(j.URL, "/")
 
-	s := strings.TrimPrefix(u, j.URL+"/job/")
+	s := strings.TrimPrefix(u, jenkinsURL+"/job/")
 
 	urlParts := strings.Split(s, "/")
 	if len(urlParts) < 2 || urlParts[0] == "" || urlParts[1] == "" {

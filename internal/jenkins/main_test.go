@@ -9,33 +9,49 @@ import (
 )
 
 func TestIsJobURL(t *testing.T) {
-	client := JenkinsClient{URL: "https://jenkins.example.com"}
+	jenkinsURL := "https://jenkins.example.com"
 
 	tests := []struct {
-		name  string
-		input string
-		want  bool
+		name   string
+		input  string
+		want   bool
+		client JenkinsClient
 	}{
 		{
-			name:  "matches job URL",
-			input: "https://jenkins.example.com/job/my-job/123",
-			want:  true,
+			name:   "matches job URL",
+			input:  "https://jenkins.example.com/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL},
 		},
 		{
-			name:  "does not match job name only",
-			input: "my-job",
-			want:  false,
+			name:   "matches job URL with path prefix",
+			input:  "https://jenkins.example.com/path/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL + "/path"},
 		},
 		{
-			name:  "does not match build number only",
-			input: "123",
-			want:  false,
+			name:   "matches job URL with path prefix ending in slash",
+			input:  "https://jenkins.example.com/path/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL + "/path/"},
+		},
+		{
+			name:   "does not match job name only",
+			input:  "my-job",
+			want:   false,
+			client: JenkinsClient{URL: jenkinsURL},
+		},
+		{
+			name:   "does not match build number only",
+			input:  "123",
+			want:   false,
+			client: JenkinsClient{URL: jenkinsURL},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := client.IsJobURL(tt.input)
+			got := tt.client.IsJobURL(tt.input)
 			if got != tt.want {
 				t.Fatalf("IsJobURL(%q) = %v, want %v", tt.input, got, tt.want)
 			}
