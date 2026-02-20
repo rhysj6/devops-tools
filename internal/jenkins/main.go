@@ -75,14 +75,14 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 		return nil, fmt.Errorf("build number must be greater than zero")
 	}
 
-	var baseUrl strings.Builder
-	baseUrl.WriteString(strings.TrimSuffix(j.URL, "/"))
+	var baseURL strings.Builder
+	baseURL.WriteString(strings.TrimSuffix(j.URL, "/"))
 
 	for pathPart := range strings.SplitSeq(jobName, "/") {
-		baseUrl.WriteString("/job/" + url.PathEscape(pathPart))
+		baseURL.WriteString("/job/" + url.PathEscape(pathPart))
 	}
 
-	logURL := fmt.Sprintf("%s/%d/consoleText", baseUrl.String(), buildNumber)
+	logURL := fmt.Sprintf("%s/%d/consoleText", baseURL.String(), buildNumber)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logURL, nil)
 	if err != nil {
 		return nil, err
