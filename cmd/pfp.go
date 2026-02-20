@@ -80,7 +80,6 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 	}
 
 	var rc io.ReadCloser
-	var re io.Reader
 
 	switch source {
 	case "file":
@@ -113,7 +112,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 	}
 
 	defer rc.Close()
-	re = bufio.NewReader(rc)
+	re := bufio.NewReader(rc)
 
 	m, s, e := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
 	pfp.TextOutput(os.Stdout, m, s)
