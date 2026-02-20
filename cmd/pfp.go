@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
@@ -47,6 +49,16 @@ func addPfpCommands(rootCmd *cobra.Command) {
 	}
 	pfpCmd.AddCommand(fileParseCmd)
 
+	jenkinsParseCmd := &cobra.Command{
+		Use:   "jenkins [url|job_name] [build_no]",
+		Short: "Reads logs from Jenkins for failure parsing",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runPfp(cmd, "jenkins", args)
+		},
+	}
+	pfpCmd.AddCommand(jenkinsParseCmd)
+
 	rootCmd.AddCommand(pfpCmd)
 }
 
@@ -63,20 +75,47 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 	if err != nil {
 		return err
 	}
+	if cfg.Pfp == nil {
+		return fmt.Errorf("pfp config is not set")
+	}
 
-	var r io.Reader
+	var rc io.ReadCloser
+	var re io.Reader
 
 	switch source {
 	case "file":
-		f, e := loadFile(args[0])
-		if e != nil {
-			return e
+		rc, err = loadFile(args[0])
+		if err != nil {
+			return err
 		}
-		defer f.Close()
-		r = bufio.NewReader(f)
+	case "jenkins":
+		if cfg.Jenkins.Url == "" {
+			return fmt.Errorf("Jenkins URL is not set")
+		}
+		var jobName string
+		var buildNumber int
+		if len(args) == 1 {
+			jobName, buildNumber, err = cfg.Jenkins.GetJobNameAndNumberFromUrl(args[0])
+			if err != nil {
+				return err
+			}
+		} else {
+			jobName = args[0]
+			buildNumber, err = strconv.Atoi(args[1])
+			if err != nil {
+				return err
+			}
+		}
+		rc, err = cfg.Jenkins.GetBuildLogs(jobName, buildNumber)
+		if err != nil {
+			return err
+		}
 	}
 
-	m, s, e := pfp.Parse(r, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	defer rc.Close()
+	re = bufio.NewReader(rc)
+
+	m, s, e := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
 	pfp.TextOutput(os.Stdout, m, s)
 
 	if e != nil {

@@ -4,14 +4,8 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/rhysj6/devops-tools/internal/jenkins"
 	"github.com/rhysj6/devops-tools/internal/pfp"
 )
-
-type Config struct {
-	Pfp     *LogParserConfig      `mapstructure:"pfp"`
-	Jenkins jenkins.JenkinsClient `mapstructure:"jenkins"`
-}
 
 func (c *Config) SetupConfig() error {
 	if c.Pfp != nil {
