@@ -23,7 +23,7 @@ func (j JenkinsClient) IsJobURL(s string) bool {
 	return strings.HasPrefix(s, j.URL+"/job/")
 }
 
-func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, e error) {
+func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, err error) {
 
 	if !j.IsJobURL(u) {
 		return "", 0, fmt.Errorf("%v is not a Jenkins job url", u)
@@ -36,15 +36,15 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 		return "", 0, fmt.Errorf("%v is not a valid Jenkins job build url", u)
 	}
 
-	name, e = url.QueryUnescape(urlParts[0])
+	name, err = url.QueryUnescape(urlParts[0])
 
-	if e != nil {
-		return "", 0, e
+	if err != nil {
+		return "", 0, err
 	}
 
-	buildNumber, e = strconv.Atoi(urlParts[1])
-	if e != nil {
-		return "", 0, e
+	buildNumber, err = strconv.Atoi(urlParts[1])
+	if err != nil {
+		return "", 0, err
 	}
 
 	return name, buildNumber, nil
