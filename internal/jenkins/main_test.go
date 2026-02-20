@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestIsJobUrl(t *testing.T) {
-	client := JenkinsClient{Url: "https://jenkins.example.com"}
+func TestIsJobURL(t *testing.T) {
+	client := JenkinsClient{URL: "https://jenkins.example.com"}
 
 	tests := []struct {
 		name  string
@@ -35,16 +35,16 @@ func TestIsJobUrl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := client.IsJobUrl(tt.input)
+			got := client.IsJobURL(tt.input)
 			if got != tt.want {
-				t.Fatalf("IsJobUrl(%q) = %v, want %v", tt.input, got, tt.want)
+				t.Fatalf("IsJobURL(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestGetJobNameAndNumberFromUrl(t *testing.T) {
-	client := JenkinsClient{Url: "https://jenkins.example.com"}
+func TestGetJobNameAndNumberFromURL(t *testing.T) {
+	client := JenkinsClient{URL: "https://jenkins.example.com"}
 
 	tests := []struct {
 		name            string
@@ -91,9 +91,9 @@ func TestGetJobNameAndNumberFromUrl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotName, gotBuildNumber, err := client.GetJobNameAndNumberFromUrl(tt.input)
+			gotName, gotBuildNumber, err := client.GetJobNameAndNumberFromURL(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("GetJobNameAndNumberFromUrl(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+				t.Fatalf("GetJobNameAndNumberFromURL(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 			}
 
 			if tt.wantErr {
@@ -101,11 +101,11 @@ func TestGetJobNameAndNumberFromUrl(t *testing.T) {
 			}
 
 			if gotName != tt.wantName {
-				t.Fatalf("GetJobNameAndNumberFromUrl(%q) name = %q, want %q", tt.input, gotName, tt.wantName)
+				t.Fatalf("GetJobNameAndNumberFromURL(%q) name = %q, want %q", tt.input, gotName, tt.wantName)
 			}
 
 			if gotBuildNumber != tt.wantBuildNumber {
-				t.Fatalf("GetJobNameAndNumberFromUrl(%q) buildNumber = %d, want %d", tt.input, gotBuildNumber, tt.wantBuildNumber)
+				t.Fatalf("GetJobNameAndNumberFromURL(%q) buildNumber = %d, want %d", tt.input, gotBuildNumber, tt.wantBuildNumber)
 			}
 		})
 	}
@@ -130,7 +130,7 @@ func TestGetBuildLogs(t *testing.T) {
 		defer server.Close()
 
 		client := JenkinsClient{
-			Url:      server.URL,
+			URL:      server.URL,
 			Username: "user",
 			Password: "pass",
 		}
@@ -164,7 +164,7 @@ func TestGetBuildLogs(t *testing.T) {
 		defer server.Close()
 
 		client := JenkinsClient{
-			Url:      server.URL,
+			URL:      server.URL,
 			Username: "user",
 			Password: "wrong-pass",
 		}
@@ -177,7 +177,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 	t.Run("returns error for invalid parameters", func(t *testing.T) {
 		client := JenkinsClient{
-			Url:      "https://jenkins.example.com",
+			URL:      "https://jenkins.example.com",
 			Username: "user",
 			Password: "pass",
 		}

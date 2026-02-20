@@ -14,22 +14,22 @@ import (
 var ErrUnauthorized = errors.New("jenkins authentication failed")
 
 type JenkinsClient struct {
-	Url      string `mapstructure:"url"`
+	URL      string `mapstructure:"url"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }
 
-func (j JenkinsClient) IsJobUrl(s string) bool {
-	return strings.HasPrefix(s, j.Url+"/job/")
+func (j JenkinsClient) IsJobURL(s string) bool {
+	return strings.HasPrefix(s, j.URL+"/job/")
 }
 
-func (j JenkinsClient) GetJobNameAndNumberFromUrl(u string) (name string, buildNumber int, e error) {
+func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, e error) {
 
-	if !j.IsJobUrl(u) {
+	if !j.IsJobURL(u) {
 		return "", 0, fmt.Errorf("%v is not a Jenkins job url", u)
 	}
 
-	s := strings.TrimPrefix(u, j.Url+"/job/")
+	s := strings.TrimPrefix(u, j.URL+"/job/")
 
 	url_parts := strings.Split(s, "/")
 	if len(url_parts) < 2 || url_parts[0] == "" || url_parts[1] == "" {
@@ -63,7 +63,7 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 	}
 
 	encodedJobName := url.PathEscape(jobName)
-	logURL := fmt.Sprintf("%s/job/%s/%d/consoleText", strings.TrimSuffix(j.Url, "/"), encodedJobName, buildNumber)
+	logURL := fmt.Sprintf("%s/job/%s/%d/consoleText", strings.TrimSuffix(j.URL, "/"), encodedJobName, buildNumber)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logURL, nil)
 	if err != nil {
 		return nil, err

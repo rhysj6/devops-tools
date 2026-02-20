@@ -89,13 +89,13 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 			return err
 		}
 	case "jenkins":
-		if cfg.Jenkins.Url == "" {
+		if cfg.Jenkins.URL == "" {
 			return fmt.Errorf("Jenkins URL is not set")
 		}
 		var jobName string
 		var buildNumber int
 		if len(args) == 1 {
-			jobName, buildNumber, err = cfg.Jenkins.GetJobNameAndNumberFromUrl(args[0])
+			jobName, buildNumber, err = cfg.Jenkins.GetJobNameAndNumberFromURL(args[0])
 			if err != nil {
 				return err
 			}
