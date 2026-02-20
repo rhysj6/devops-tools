@@ -31,18 +31,18 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 
 	s := strings.TrimPrefix(u, j.URL+"/job/")
 
-	url_parts := strings.Split(s, "/")
-	if len(url_parts) < 2 || url_parts[0] == "" || url_parts[1] == "" {
+	urlParts := strings.Split(s, "/")
+	if len(urlParts) < 2 || urlParts[0] == "" || urlParts[1] == "" {
 		return "", 0, fmt.Errorf("%v is not a valid Jenkins job build url", u)
 	}
 
-	name, e = url.QueryUnescape(url_parts[0])
+	name, e = url.QueryUnescape(urlParts[0])
 
 	if e != nil {
 		return "", 0, e
 	}
 
-	buildNumber, e = strconv.Atoi(url_parts[1])
+	buildNumber, e = strconv.Atoi(urlParts[1])
 	if e != nil {
 		return "", 0, e
 	}
