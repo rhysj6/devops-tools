@@ -9,33 +9,49 @@ import (
 )
 
 func TestIsJobURL(t *testing.T) {
-	client := JenkinsClient{URL: "https://jenkins.example.com"}
+	jenkinsURL := "https://jenkins.example.com"
 
 	tests := []struct {
-		name  string
-		input string
-		want  bool
+		name   string
+		input  string
+		want   bool
+		client JenkinsClient
 	}{
 		{
-			name:  "matches job URL",
-			input: "https://jenkins.example.com/job/my-job/123",
-			want:  true,
+			name:   "matches job URL",
+			input:  "https://jenkins.example.com/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL},
 		},
 		{
-			name:  "does not match job name only",
-			input: "my-job",
-			want:  false,
+			name:   "matches job URL with path prefix",
+			input:  "https://jenkins.example.com/path/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL + "/path"},
 		},
 		{
-			name:  "does not match build number only",
-			input: "123",
-			want:  false,
+			name:   "matches job URL with path prefix ending in slash",
+			input:  "https://jenkins.example.com/path/job/my-job/123",
+			want:   true,
+			client: JenkinsClient{URL: jenkinsURL + "/path/"},
+		},
+		{
+			name:   "does not match job name only",
+			input:  "my-job",
+			want:   false,
+			client: JenkinsClient{URL: jenkinsURL},
+		},
+		{
+			name:   "does not match build number only",
+			input:  "123",
+			want:   false,
+			client: JenkinsClient{URL: jenkinsURL},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := client.IsJobURL(tt.input)
+			got := tt.client.IsJobURL(tt.input)
 			if got != tt.want {
 				t.Fatalf("IsJobURL(%q) = %v, want %v", tt.input, got, tt.want)
 			}
@@ -64,6 +80,13 @@ func TestGetJobNameAndNumberFromURL(t *testing.T) {
 			name:            "parses URL encoded job name",
 			input:           "https://jenkins.example.com/job/My+Job/456",
 			wantName:        "My Job",
+			wantBuildNumber: 456,
+			wantErr:         false,
+		},
+		{
+			name:            "parses URL with job within multiple folders",
+			input:           "https://jenkins.example.com/job/old%20ansible/job/linux/job/setup/456",
+			wantName:        "old ansible/linux/setup",
 			wantBuildNumber: 456,
 			wantErr:         false,
 		},
@@ -150,6 +173,26 @@ func TestGetBuildLogs(t *testing.T) {
 		if logs != "line1\nline2\n" {
 			t.Fatalf("GetBuildLogs returned logs %q, want %q", logs, "line1\nline2\n")
 		}
+	})
+
+	t.Run("handles jenkins folder paths correctly", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/job/old ansible/job/linux/job/my-job/123/consoleText" {
+				t.Fatalf("unexpected path: %s", r.URL.Path)
+			}
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("line1\nline2\n"))
+		}))
+		defer server.Close()
+
+		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
+
+		reader, err := client.GetBuildLogs("old ansible/linux/my-job", 123)
+		if err != nil {
+			t.Fatalf("GetBuildLogs returned error: %v", err)
+		}
+		reader.Close()
 	})
 
 	t.Run("returns unauthorized error for incorrect credentials", func(t *testing.T) {

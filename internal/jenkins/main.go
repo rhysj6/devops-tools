@@ -20,7 +20,8 @@ type JenkinsClient struct {
 }
 
 func (j JenkinsClient) IsJobURL(s string) bool {
-	return strings.HasPrefix(s, j.URL+"/job/")
+	jenkinsURL := strings.TrimSuffix(j.URL, "/")
+	return strings.HasPrefix(s, jenkinsURL+"/job/")
 }
 
 func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, err error) {
@@ -28,19 +29,35 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 	if !j.IsJobURL(u) {
 		return "", 0, fmt.Errorf("%v is not a Jenkins job url", u)
 	}
+	jenkinsURL := strings.TrimSuffix(j.URL, "/")
 
-	s := strings.TrimPrefix(u, j.URL+"/job/")
+	s := strings.TrimPrefix(u, jenkinsURL+"/job/")
 
-	urlParts := strings.Split(s, "/")
+	folderPathParts := strings.Split(s, "/job/")
+
+	if len(folderPathParts) > 1 {
+		for i, folder := range folderPathParts {
+			if i+1 == len(folderPathParts) {
+				continue
+			}
+			decodedFolder, err := url.QueryUnescape(folder)
+			if err != nil {
+				return "", 0, err
+			}
+			name += decodedFolder + "/"
+		}
+	}
+
+	urlParts := strings.Split(folderPathParts[len(folderPathParts)-1], "/")
 	if len(urlParts) < 2 || urlParts[0] == "" || urlParts[1] == "" {
 		return "", 0, fmt.Errorf("%v is not a valid Jenkins job build url", u)
 	}
 
-	name, err = url.QueryUnescape(urlParts[0])
-
+	jobName, err := url.QueryUnescape(urlParts[0])
 	if err != nil {
 		return "", 0, err
 	}
+	name += jobName
 
 	buildNumber, err = strconv.Atoi(urlParts[1])
 	if err != nil {
@@ -62,8 +79,14 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 		return nil, fmt.Errorf("build number must be greater than zero")
 	}
 
-	encodedJobName := url.PathEscape(jobName)
-	logURL := fmt.Sprintf("%s/job/%s/%d/consoleText", strings.TrimSuffix(j.URL, "/"), encodedJobName, buildNumber)
+	var baseURL strings.Builder
+	baseURL.WriteString(strings.TrimSuffix(j.URL, "/"))
+
+	for pathPart := range strings.SplitSeq(jobName, "/") {
+		baseURL.WriteString("/job/" + url.PathEscape(pathPart))
+	}
+
+	logURL := fmt.Sprintf("%s/%d/consoleText", baseURL.String(), buildNumber)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logURL, nil)
 	if err != nil {
 		return nil, err
