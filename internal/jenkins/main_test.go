@@ -244,4 +244,25 @@ func TestGetBuildLogs(t *testing.T) {
 			t.Fatal("GetBuildLogs should return error for invalid build number")
 		}
 	})
+
+	t.Run("returns error for 404 status", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		client := JenkinsClient{
+			URL:      server.URL,
+			Username: "user",
+			Password: "wrong-pass",
+		}
+
+		_, err := client.GetBuildLogs("my-job", 123)
+		if err == nil {
+			t.Fatal("Expected error got nil")
+		}
+		if err.Error() != "failed to fetch build logs: status 404" {
+			t.Fatalf("Expected 'failed to fetch build logs: status 404' got %v", err.Error())
+		}
+	})
 }
