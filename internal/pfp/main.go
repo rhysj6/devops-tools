@@ -66,9 +66,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 	for _, m := range activeMatchers {
 		<-m.DoneChannel
 	}
-	if ctx.Err() == nil {
-		matches = append(matches, GetNewParseMatches(matchChan)...)
-	}
+	matches = append(matches, GetNewParseMatches(matchChan)...)
 
 	stats.Duration = time.Since(startTime)
 	stats.LinesParsed = lineNo
