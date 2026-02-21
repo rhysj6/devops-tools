@@ -20,9 +20,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	stats := Stats{
-		PartialMatches: 0,
-	}
+	stats := Stats{}
 	startTime := time.Now()
 	scanner := bufio.NewScanner(r)
 
@@ -48,7 +46,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 
 		pendingMatchers := InitialCheckLine(line, rules)
 		for _, m := range pendingMatchers {
-			go RunMatcher(m, matchChan, ctx)
+			go RunMatcher(ctx, m, matchChan)
 		}
 
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)
@@ -68,9 +66,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 	for _, m := range activeMatchers {
 		<-m.DoneChannel
 	}
-	if ctx.Err() == nil {
-		matches = append(matches, GetNewParseMatches(matchChan)...)
-	}
+	matches = append(matches, GetNewParseMatches(matchChan)...)
 
 	stats.Duration = time.Since(startTime)
 	stats.LinesParsed = lineNo

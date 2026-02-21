@@ -98,7 +98,7 @@ func newMatcher(firstLine *LogLine, rule *Rule) *Matcher {
 	}
 }
 
-func RunMatcher(m *Matcher, mc chan *ParseMatch, ctx context.Context) {
+func RunMatcher(ctx context.Context, m *Matcher, mc chan *ParseMatch) {
 	defer close(m.DoneChannel)
 	matchedLines := []*LogLine{m.FirstLine}
 	checkIndex := 1 // Already matched the first line
@@ -106,7 +106,7 @@ func RunMatcher(m *Matcher, mc chan *ParseMatch, ctx context.Context) {
 	for {
 		if ctx.Err() != nil {
 			return
-		} else if checkIndex+1 > len(m.Rule.Checks) {
+		} else if checkIndex >= len(m.Rule.Checks) {
 			mc <- &ParseMatch{
 				Rule:         m.Rule,
 				MatchedLines: matchedLines,
