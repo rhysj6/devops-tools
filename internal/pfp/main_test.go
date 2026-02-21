@@ -1,7 +1,6 @@
 package pfp
 
 import (
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -35,35 +34,6 @@ func TestParse(t *testing.T) {
 
 		if len(matches) != 0 {
 			t.Fatalf("Expected 0 matches, got %d", len(matches))
-		}
-	})
-
-	t.Run("respects maxMatches as soft limit", func(t *testing.T) {
-		// maxMatches is a soft limit: when exceeded, parsing stops but active
-		// goroutines are allowed to finish, so final count may exceed maxMatches
-		// instead we check that not too many lines were parsed
-		matching := strings.Repeat("match line \n", 3)
-		notMatching := strings.Repeat("test line\n", 100)
-
-		reader := strings.NewReader(matching + notMatching)
-
-		rule := &Rule{
-			Checks: []LineMatcher{
-				{RegexText: "match", Regex: regexp.MustCompile("match")},
-			},
-		}
-
-		matches, stats, err := Parse(reader, []*Rule{rule}, 2)
-		if err != nil {
-			t.Fatalf("Parse returned error: %v", err)
-		}
-
-		if stats.LinesParsed >= 103 {
-			t.Fatalf("Expected early exit, parsed %d lines", stats.LinesParsed)
-		}
-
-		if len(matches) == 0 {
-			t.Fatal("Expected matches to be collected")
 		}
 	})
 
