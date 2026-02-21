@@ -46,7 +46,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 
 		pendingMatchers := InitialCheckLine(line, rules)
 		for _, m := range pendingMatchers {
-			go RunMatcher(m, matchChan, ctx)
+			go RunMatcher(ctx, m, matchChan)
 		}
 
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)

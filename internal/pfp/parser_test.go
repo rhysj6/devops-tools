@@ -129,7 +129,7 @@ func TestRunMatcher_ContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	matchChan := make(chan *ParseMatch)
 
-	go RunMatcher(m, matchChan, ctx) // This matcher will be expecting another line to continue the checks
+	go RunMatcher(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
 
 	m.LineChannel <- &LogLine{LineNumber: 2, Content: "not"} // Send a log line to ensure
 
@@ -150,7 +150,7 @@ func TestRunMatcher_HandlesSingleCheck(t *testing.T) {
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go RunMatcher(m, matchChan, ctx) // This matcher will be expecting another line to continue the checks
+	go RunMatcher(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
 
 	select {
 	case msg := <-matchChan:
@@ -184,7 +184,7 @@ func TestRunMatcher_HandlesMatchAndExit(t *testing.T) {
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go RunMatcher(m, matchChan, ctx)
+	go RunMatcher(ctx, m, matchChan)
 
 	// Spam some non matching lines
 	for i := range 97 {
@@ -231,7 +231,7 @@ func TestRunMatcher_HandlesNoMatch(t *testing.T) {
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go RunMatcher(m, matchChan, ctx)
+	go RunMatcher(ctx, m, matchChan)
 
 	// Spam some non matching lines
 	for i := range 99 {
