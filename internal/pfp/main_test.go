@@ -41,26 +41,27 @@ func TestParse(t *testing.T) {
 	t.Run("respects maxMatches as soft limit", func(t *testing.T) {
 		// maxMatches is a soft limit: when exceeded, parsing stops but active
 		// goroutines are allowed to finish, so final count may exceed maxMatches
-		input := strings.Repeat("test line\n", 100)
-		reader := strings.NewReader(input)
+		// instead we check that not too many lines were parsed
+		matching := strings.Repeat("match line \n", 3)
+		notMatching := strings.Repeat("test line\n", 100)
+
+		reader := strings.NewReader(matching + notMatching)
 
 		rule := &Rule{
 			Checks: []LineMatcher{
-				{RegexText: "test", Regex: regexp.MustCompile("test")},
+				{RegexText: "match", Regex: regexp.MustCompile("match")},
 			},
 		}
 
-		matches, stats, err := Parse(reader, []*Rule{rule}, 10)
+		matches, stats, err := Parse(reader, []*Rule{rule}, 2)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}
 
-		// Verify early exit: not all 100 lines should be parsed
-		if stats.LinesParsed >= 100 {
+		if stats.LinesParsed >= 103 {
 			t.Fatalf("Expected early exit, parsed %d lines", stats.LinesParsed)
 		}
 
-		// maxMatches is soft, so we may have more matches due to finishing goroutines
 		if len(matches) == 0 {
 			t.Fatal("Expected matches to be collected")
 		}
