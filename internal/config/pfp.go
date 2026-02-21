@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"regexp"
 
 	"github.com/rhysj6/devops-tools/internal/pfp"
@@ -51,11 +51,11 @@ func (c *LogParserConfig) CompileRegex() error {
 func (c *LogParserConfig) Validate() error {
 	err := c.CompileRegex()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to compile regex: %w", err)
 	}
-	for _, r := range c.Rules {
+	for i, r := range c.Rules {
 		if len(r.Checks) == 0 {
-			log.Fatal("Error validating config, a rule has 0 checks")
+			return fmt.Errorf("rule %d (%q) has 0 checks", i, r.Name)
 		}
 	}
 
