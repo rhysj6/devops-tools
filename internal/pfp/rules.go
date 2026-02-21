@@ -19,30 +19,18 @@ type Rule struct {
 }
 
 func (r Rule) GetNeededLineCount() int {
-	if len(r.Checks) > r.MaxLines {
-		return len(r.Checks)
-	}
-
-	if len(r.Checks) == 1 {
+	if len(r.Checks) <= 1 {
 		return 1
 	}
-
-	return r.MaxLines
+	return max(len(r.Checks), r.MaxLines)
 }
 
 func (m *LineMatcher) CheckLine(l string) bool {
-	hasRegex := m.Regex != nil
-
-	if m.Contains != "" {
-		if !strings.Contains(l, m.Contains) {
-			return false
-		} else if !hasRegex {
-			return true
-		}
-	}
-	if !hasRegex {
+	if m.Contains != "" && !strings.Contains(l, m.Contains) {
 		return false
 	}
-
-	return m.Regex.FindString(l) != ""
+	if m.Regex != nil {
+		return m.Regex.MatchString(l)
+	}
+	return m.Contains != ""
 }

@@ -20,9 +20,7 @@ func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, er
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	stats := Stats{
-		PartialMatches: 0,
-	}
+	stats := Stats{}
 	startTime := time.Now()
 	scanner := bufio.NewScanner(r)
 

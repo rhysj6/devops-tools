@@ -6,7 +6,7 @@ import (
 )
 
 func TextOutput(w io.Writer, matches []*ParseMatch, stats Stats) {
-	fmt.Fprintf(w, "Stats:")
+	fmt.Fprintln(w, "Stats:")
 	fmt.Fprintf(w, "Lines parsed:         %v \n", stats.LinesParsed)
 	fmt.Fprintf(w, "Duration:             %v \n", stats.Duration)
 	fmt.Fprintf(w, "Partial Matches:      %v \n", stats.PartialMatches)

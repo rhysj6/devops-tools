@@ -106,7 +106,7 @@ func RunMatcher(m *Matcher, mc chan *ParseMatch, ctx context.Context) {
 	for {
 		if ctx.Err() != nil {
 			return
-		} else if checkIndex+1 > len(m.Rule.Checks) {
+		} else if checkIndex >= len(m.Rule.Checks) {
 			mc <- &ParseMatch{
 				Rule:         m.Rule,
 				MatchedLines: matchedLines,

@@ -29,11 +29,7 @@ func addPfpCommands(rootCmd *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			err = cfg.Pfp.Validate()
-			if err != nil {
-				return err
-			}
-			return nil
+			return cfg.Pfp.Validate()
 		},
 		SilenceUsage: true,
 	}
@@ -114,11 +110,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 	defer rc.Close()
 	re := bufio.NewReader(rc)
 
-	m, s, e := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
-	pfp.TextOutput(os.Stdout, m, s)
-
-	if e != nil {
-		return e
-	}
-	return nil
+	matches, stats, err := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	pfp.TextOutput(os.Stdout, matches, stats)
+	return err
 }
