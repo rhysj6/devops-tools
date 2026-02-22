@@ -28,6 +28,19 @@ type LogSource interface {
 	GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error)
 }
 
+func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
+	logs, err := source.GetLogs()
+	if err != nil {
+		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
+	}
+	defer logs.Close()
+	if !source.SupportDownstreamFailedBuilds() {
+		return Parse(logs, rules, maxMatches)
+	}
+	// TODO: Add support for downstream failed builds.
+	return Parse(logs, rules, maxMatches)
+}
+
 func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

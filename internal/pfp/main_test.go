@@ -1,9 +1,108 @@
 package pfp
 
 import (
+	"errors"
+	"io"
 	"strings"
 	"testing"
 )
+
+func TestParseFromSource(t *testing.T) {
+	t.Run("successfully parses logs from source", func(t *testing.T) {
+		mockSource := &MockLogSource{
+			logs: io.NopCloser(strings.NewReader("line1\nline2\nline3\n")),
+		}
+
+		rules := []*Rule{}
+		matches, stats, err := ParseFromSource(mockSource, rules, 10)
+
+		if err != nil {
+			t.Fatalf("ParseFromSource returned error: %v", err)
+		}
+
+		if stats.LinesParsed == 0 {
+			t.Fatal("Expected some lines to be parsed")
+		}
+
+		if matches == nil {
+			t.Fatal("Expected matches to not be nil")
+		}
+
+		if !mockSource.closeCalled {
+			t.Fatal("Expected Close to be called on logs")
+		}
+	})
+
+	t.Run("returns error when GetLogs fails", func(t *testing.T) {
+		expectedErr := errors.New("failed to get logs")
+		mockSource := &MockLogSource{
+			getLogsErr: expectedErr,
+		}
+
+		rules := []*Rule{}
+		_, _, err := ParseFromSource(mockSource, rules, 10)
+
+		if err == nil {
+			t.Fatal("Expected error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "failed to get logs from source") {
+			t.Fatalf("Expected error message to contain 'failed to get logs from source', got: %v", err)
+		}
+	})
+
+	t.Run("calls Parse when downstream builds not supported", func(t *testing.T) {
+		mockSource := &MockLogSource{
+			logs:                          io.NopCloser(strings.NewReader("test\n")),
+			supportDownstreamFailedBuilds: false,
+		}
+
+		rules := []*Rule{}
+		_, _, err := ParseFromSource(mockSource, rules, 10)
+
+		if err != nil {
+			t.Fatalf("ParseFromSource returned error: %v", err)
+		}
+	})
+}
+
+type MockLogSource struct {
+	logs                          io.ReadCloser
+	getLogsErr                    error
+	closeCalled                   bool
+	supportDownstreamFailedBuilds bool
+}
+
+func (m *MockLogSource) GetLogs() (io.ReadCloser, error) {
+	if m.getLogsErr != nil {
+		return nil, m.getLogsErr
+	}
+	return &mockReadCloser{Reader: m.logs, onClose: func() { m.closeCalled = true }}, nil
+}
+
+func (m *MockLogSource) SupportDownstreamFailedBuilds() bool {
+	return m.supportDownstreamFailedBuilds
+}
+
+func (m *MockLogSource) GetDownstreamFailedBuildRule() *Rule {
+	return nil
+}
+
+func (m *MockLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error) {
+	return nil, nil
+}
+
+type mockReadCloser struct {
+	io.Reader
+	onClose func()
+}
+
+func (m *mockReadCloser) Close() error {
+	if m.onClose != nil {
+		m.onClose()
+	}
+	return nil
+}
 
 func TestParse(t *testing.T) {
 	t.Run("calculates stats correctly", func(t *testing.T) {
