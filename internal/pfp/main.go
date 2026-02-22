@@ -16,6 +16,18 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
+type LogSource interface {
+	// Get the logs to be parsed. This should return an io.ReadCloser that can be used to read the logs line by line.
+	GetLogs() (io.ReadCloser, error)
+	// SupportDownstreamFailedBuilds returns true if the log source supports parsing logs of downstream failed builds.
+	// If this returns true, the parser will use the rule returned by GetDownstreamFailedBuildRule to identify log lines that indicate a downstream failed build and then use GetDownstreamFailedBuildLogs to get the logs of the downstream failed build.
+	SupportDownstreamFailedBuilds() bool
+	// GetDownstreamFailedBuildRule returns the rule that should match a log line to be considered the results of a failed downstream build.
+	GetDownstreamFailedBuildRule() *Rule
+	// GetDownstreamFailedBuildLogs returns the logs of a downstream failed build given a ParseMatch that contains the rule that matched the failed downstream build and the log lines that matched that rule.
+	GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error)
+}
+
 func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
