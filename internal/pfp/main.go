@@ -36,12 +36,36 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
-	defer logs.Close()
-	if !source.SupportDownstreamFailedBuilds() {
+	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream failed builds, we can just parse the logs once and return the results.
+	if !ok {
 		return Parse(logs, rules, maxMatches)
 	}
-	// TODO: Add support for downstream failed builds.
-	return Parse(logs, rules, maxMatches)
+
+	matches, stats, err := Parse(logs, append(rules, recursiveSource.GetDownstreamFailedBuildRule()), maxMatches)
+	if err != nil {
+		return nil, stats, fmt.Errorf("failed to parse logs: %w", err)
+	}
+
+	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
+		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamFailedBuildRule() {
+			downstreamLogs, err := recursiveSource.GetDownstreamFailedBuildLogs(matches[0])
+			if err != nil {
+				return nil, stats, fmt.Errorf("failed to get downstream failed build logs: %w", err)
+			}
+			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches)
+			if err != nil {
+				return nil, stats, fmt.Errorf("failed to parse downstream failed build logs: %w", err)
+			}
+			matches = append(matches, downstreamMatches...)
+			stats.PartialMatches += downstreamStats.PartialMatches
+			stats.CompleteMatches += downstreamStats.CompleteMatches
+			stats.LinesParsed += downstreamStats.LinesParsed
+		} else {
+			break
+		}
+	}
+
+	return matches, stats, nil
 }
 
 func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {

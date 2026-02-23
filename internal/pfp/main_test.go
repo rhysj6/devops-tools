@@ -141,9 +141,13 @@ func (m *MockLogSource) GetDownstreamFailedBuildRule() *Rule {
 
 func (m *MockLogSource) GetDownstreamFailedBuildLogs(pm *ParseMatch) (io.ReadCloser, error) {
 	if m.GetDownstreamFailedBuildLogsFunc != nil {
-		return m.GetDownstreamFailedBuildLogsFunc(nil)
+		return m.GetDownstreamFailedBuildLogsFunc(pm)
 	}
-	panic("unimplemented")
+	panic("GetDownstreamFailedBuildLogs is unimplemented")
+}
+
+func (m *MockLogSource) GetMaxRecursionDepth() int {
+	return 3
 }
 
 type mockReadCloser struct {
