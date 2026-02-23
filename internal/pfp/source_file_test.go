@@ -75,37 +75,3 @@ func TestFileLogSource_GetLogs(t *testing.T) {
 		}
 	})
 }
-
-func TestFileLogSource_SupportDownstreamFailedBuilds(t *testing.T) {
-	source := &FileLogSource{}
-
-	if source.SupportDownstreamFailedBuilds() {
-		t.Error("Expected SupportDownstreamFailedBuilds to return false")
-	}
-}
-
-func TestFileLogSource_GetDownstreamFailedBuildRule(t *testing.T) {
-	source := &FileLogSource{}
-
-	if rule := source.GetDownstreamFailedBuildRule(); rule != nil {
-		t.Errorf("Expected nil rule, got: %v", rule)
-	}
-}
-
-func TestFileLogSource_GetDownstreamFailedBuildLogs(t *testing.T) {
-	source := &FileLogSource{}
-	match := &ParseMatch{}
-
-	reader, err := source.GetDownstreamFailedBuildLogs(match)
-
-	if err != nil {
-		t.Errorf("Expected nil error, got: %v", err)
-	}
-	if reader != nil {
-		t.Errorf("Expected nil reader, got: %v", reader)
-	}
-}
-
-func TestFileLogSource_ImplementsLogSource(t *testing.T) {
-	var _ LogSource = (*FileLogSource)(nil)
-}

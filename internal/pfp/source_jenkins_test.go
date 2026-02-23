@@ -16,21 +16,21 @@ type MockJenkinsClient struct {
 }
 
 func (m *MockJenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
-	panic("unimplemented")
+	panic("GetBuildLogsWithContext is unimplemented")
 }
 func (m *MockJenkinsClient) IsJobURL(string) bool {
-	panic("unimplemented")
+	panic("IsJobURL is unimplemented")
 }
 
 func (m *MockJenkinsClient) GetJobNameAndNumberFromURL(url string) (string, int, error) {
 	if m.GetJobNameAndNumberFromURLFunc != nil {
 		return m.GetJobNameAndNumberFromURLFunc(url)
 	}
-	panic("unimplemented")
+	panic("GetJobNameAndNumberFromURL is unimplemented")
 }
 
 func (m *MockJenkinsClient) GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error) {
-	panic("unimplemented")
+	panic("GetBuildLogs is unimplemented")
 }
 
 func TestNewJenkinsLogSource(t *testing.T) {

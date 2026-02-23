@@ -8,7 +8,7 @@ import (
 	"github.com/rhysj6/devops-tools/internal/jenkins"
 )
 
-var _ LogSource = (*JenkinsLogSource)(nil)
+var _ RecursiveLogSource = (*JenkinsLogSource)(nil)
 
 type JenkinsLogSource struct {
 	client      jenkins.Client
@@ -47,14 +47,14 @@ func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 	return j.client.GetBuildLogs(j.jobName, j.buildNumber)
 }
 
-func (j *JenkinsLogSource) SupportDownstreamFailedBuilds() bool {
-	return false
-}
-
 func (j *JenkinsLogSource) GetDownstreamFailedBuildRule() *Rule {
 	return nil
 }
 
-func (j *JenkinsLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error) {
+func (j *JenkinsLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.ReadCloser, error) {
 	return nil, nil
+}
+
+func (j *JenkinsLogSource) GetMaxRecursionDepth() int {
+	return 3
 }

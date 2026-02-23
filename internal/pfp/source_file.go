@@ -24,15 +24,3 @@ func (f *FileLogSource) GetLogs() (io.ReadCloser, error) {
 
 	return file, nil
 }
-
-func (f *FileLogSource) SupportDownstreamFailedBuilds() bool {
-	return false
-}
-
-func (f *FileLogSource) GetDownstreamFailedBuildRule() *Rule {
-	return nil
-}
-
-func (f *FileLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error) {
-	return nil, nil
-}
