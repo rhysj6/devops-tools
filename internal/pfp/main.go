@@ -44,10 +44,10 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	return Parse(logs, rules, maxMatches)
 }
 
-func Parse(r io.Reader, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
+func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer r.Close()
 	defer cancel()
-
 	stats := Stats{}
 	startTime := time.Now()
 	scanner := bufio.NewScanner(r)
