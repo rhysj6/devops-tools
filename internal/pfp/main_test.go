@@ -49,6 +49,48 @@ func TestParseFromSource(t *testing.T) {
 		if !strings.Contains(err.Error(), "failed to get logs from source") {
 			t.Fatalf("Expected error message to contain 'failed to get logs from source', got: %v", err)
 		}
+
+		t.Run("successfully parses logs when downstream builds are supported", func(t *testing.T) {
+			downstreamLogRule := &Rule{
+				Checks: []LineMatcher{{Contains: "downstream log line"}},
+			}
+			finalLogRule := &Rule{
+				Checks: []LineMatcher{{Contains: "2nd level"}},
+			}
+
+			mockSource := &MockLogSource{
+				logs:                          io.NopCloser(strings.NewReader("line1\nline2\nline3\ndownstream log line\n")),
+				supportDownstreamFailedBuilds: true,
+				GetDownstreamFailedBuildRuleFunc: func() *Rule {
+					return downstreamLogRule
+				},
+				GetDownstreamFailedBuildLogsFunc: func(pm *ParseMatch) (io.Reader, error) {
+					if pm.Rule != downstreamLogRule {
+						return nil, errors.New("unexpected rule in GetDownstreamFailedBuildLogs")
+					}
+					return strings.NewReader("2nd level\n"), nil
+				},
+			}
+
+			rules := []*Rule{finalLogRule}
+			matches, stats, err := ParseFromSource(mockSource, rules, 10)
+
+			if err != nil {
+				t.Fatalf("ParseFromSource returned error: %v", err)
+			}
+
+			if stats.LinesParsed == 0 {
+				t.Fatal("Expected some lines to be parsed")
+			}
+
+			if len(matches) != 1 {
+				t.Fatalf("Expected 1 match, got %d", len(matches))
+			}
+
+			if matches[0].Rule != finalLogRule {
+				t.Fatal("Expected match to be for finalLogRule")
+			}
+		})
 	})
 
 	t.Run("calls Parse when downstream builds not supported", func(t *testing.T) {
@@ -67,10 +109,12 @@ func TestParseFromSource(t *testing.T) {
 }
 
 type MockLogSource struct {
-	logs                          io.ReadCloser
-	getLogsErr                    error
-	closeCalled                   bool
-	supportDownstreamFailedBuilds bool
+	logs                             io.ReadCloser
+	getLogsErr                       error
+	closeCalled                      bool
+	supportDownstreamFailedBuilds    bool
+	GetDownstreamFailedBuildRuleFunc func() *Rule
+	GetDownstreamFailedBuildLogsFunc func(*ParseMatch) (io.Reader, error)
 }
 
 func (m *MockLogSource) GetLogs() (io.ReadCloser, error) {
@@ -85,11 +129,17 @@ func (m *MockLogSource) SupportDownstreamFailedBuilds() bool {
 }
 
 func (m *MockLogSource) GetDownstreamFailedBuildRule() *Rule {
-	return nil
+	if m.GetDownstreamFailedBuildRuleFunc != nil {
+		return m.GetDownstreamFailedBuildRuleFunc()
+	}
+	panic("unimplemented")
 }
 
 func (m *MockLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.Reader, error) {
-	return nil, nil
+	if m.GetDownstreamFailedBuildLogsFunc != nil {
+		return m.GetDownstreamFailedBuildLogsFunc(nil)
+	}
+	panic("unimplemented")
 }
 
 type mockReadCloser struct {
