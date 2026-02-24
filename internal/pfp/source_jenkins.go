@@ -54,7 +54,7 @@ func (j *JenkinsLogSource) GetDownstreamFailedBuildRule() *Rule {
 		j.downstreamFailedBuildRule = &Rule{
 			Name: "Downstream Failed Jenkins Build",
 			Checks: []LineMatcher{
-				{Contains: "completed: FAILURE", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\d+)(?:\s+.+?)?\s+completed:\s+FAILURE\s*$`)},
+				{Contains: "completed: FAILURE", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\d+)(?::\s*(?P<suffix>.*?))?\s+completed:\s+FAILURE\s*$`)},
 			},
 			Solution: "If there are no other matches, then look at the logs of the downstream failed build for more information on why the build failed.",
 		}
