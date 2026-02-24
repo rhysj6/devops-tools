@@ -292,6 +292,7 @@ func TestValidate(t *testing.T) {
 						{RegexText: "ERROR", Regex: nil},
 						{RegexText: "FATAL", Regex: nil},
 					},
+					MaxLines: 5,
 				},
 				{
 					Name: "warning-rule",
