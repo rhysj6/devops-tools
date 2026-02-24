@@ -3,6 +3,7 @@ package pfp
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 
 	"github.com/rhysj6/devops-tools/internal/jenkins"
@@ -11,9 +12,10 @@ import (
 var _ RecursiveLogSource = (*JenkinsLogSource)(nil)
 
 type JenkinsLogSource struct {
-	client      jenkins.Client
-	jobName     string
-	buildNumber int
+	client                    jenkins.Client
+	jobName                   string
+	buildNumber               int
+	downstreamFailedBuildRule *Rule
 }
 
 func NewJenkinsLogSource(client jenkins.Client, cmdArgs []string) (*JenkinsLogSource, error) {
@@ -48,11 +50,51 @@ func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 }
 
 func (j *JenkinsLogSource) GetDownstreamFailedBuildRule() *Rule {
-	return nil
+	if j.downstreamFailedBuildRule == nil {
+		j.downstreamFailedBuildRule = &Rule{
+			Checks: []LineMatcher{
+				{Contains: "completed: FAILURE", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\d+)(?:\s+.+?)?\s+completed:\s+FAILURE\s*$`)},
+			},
+		}
+	}
+	return j.downstreamFailedBuildRule
 }
 
-func (j *JenkinsLogSource) GetDownstreamFailedBuildLogs(*ParseMatch) (io.ReadCloser, error) {
-	return nil, nil
+func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *ParseMatch) (string, int, error) {
+	regex := match.Rule.Checks[0].Regex
+	if regex == nil {
+		return "", 0, fmt.Errorf("regex is nil for downstream failed build rule")
+	}
+	matchGroups := regex.FindStringSubmatch(match.MatchedLines[0].Content)
+	if matchGroups == nil {
+		return "", 0, fmt.Errorf("regex did not match log line for downstream failed build rule")
+	}
+	jobNameIndex := regex.SubexpIndex("job")
+	buildNumberIndex := regex.SubexpIndex("number")
+	if jobNameIndex == -1 || buildNumberIndex == -1 {
+		return "", 0, fmt.Errorf("regex does not contain 'job' or 'number' named groups for downstream failed build rule")
+	}
+	jobName := matchGroups[jobNameIndex]
+	buildNumberStr := matchGroups[buildNumberIndex]
+	buildNumber, err := strconv.Atoi(buildNumberStr)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid build number: %v", err)
+	}
+	return jobName, buildNumber, nil
+}
+
+func (j *JenkinsLogSource) GetDownstreamFailedBuildLogs(match *ParseMatch) (io.ReadCloser, error) {
+	if match.Rule != j.GetDownstreamFailedBuildRule() {
+		return nil, fmt.Errorf("match rule does not match downstream failed build rule")
+	}
+	if len(match.MatchedLines) == 0 {
+		return nil, fmt.Errorf("no matched lines in match for downstream failed build rule")
+	}
+	jobName, buildNumber, err := j.getJobNameAndBuildNumberFromMatch(match)
+	if err != nil {
+		return nil, err
+	}
+	return j.client.GetBuildLogs(jobName, buildNumber)
 }
 
 func (j *JenkinsLogSource) GetMaxRecursionDepth() int {
