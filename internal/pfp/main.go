@@ -73,6 +73,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	}
 	// Filter out the downstream failure mentions if there are recognised matches in the final logs.
 	if len(customMatches) > 0 {
+		stats.CompleteMatches = len(customMatches)
 		return customMatches, stats, nil
 	}
 
