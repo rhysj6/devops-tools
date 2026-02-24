@@ -102,7 +102,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 
 	matchChan := make(chan *ParseMatch, 100)
 
-	lineNo := 1
+	lineNo := 0
 	for scanner.Scan() {
 		lineNo++
 		line := &LogLine{
