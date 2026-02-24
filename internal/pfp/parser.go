@@ -10,7 +10,7 @@ type ParseMatch struct {
 	MatchedLines []*LogLine
 }
 
-type Matcher struct {
+type matcher struct {
 	Rule            *Rule
 	FirstLine       *LogLine
 	FinalLineNumber int
@@ -23,7 +23,7 @@ type LogLine struct {
 	LineNumber int
 }
 
-func GetNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
+func getNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
 	matches := []*ParseMatch{}
 	for {
 		select {
@@ -35,8 +35,8 @@ func GetNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
 	}
 }
 
-func PurgeInactiveMatchers(lineNumber int, matchers []*Matcher) []*Matcher {
-	activeMatchers := []*Matcher{}
+func purgeInactiveMatchers(lineNumber int, matchers []*matcher) []*matcher {
+	activeMatchers := []*matcher{}
 
 	for _, m := range matchers {
 		if lineNumber > m.FinalLineNumber {
@@ -55,19 +55,19 @@ func PurgeInactiveMatchers(lineNumber int, matchers []*Matcher) []*Matcher {
 	return activeMatchers
 }
 
-func BroadcastLogLine(line *LogLine, matchers []*Matcher) {
+func broadcastLogLine(line *LogLine, matchers []*matcher) {
 	for _, m := range matchers {
 		m.LineChannel <- line
 	}
 }
 
-func InitialCheckLine(line *LogLine, rules []*Rule) []*Matcher {
-	c := make(chan *Matcher, len(rules))
+func initialCheckLine(line *LogLine, rules []*Rule) []*matcher {
+	c := make(chan *matcher, len(rules))
 	var wg sync.WaitGroup
 
 	for _, r := range rules {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, c chan *Matcher, r *Rule, l *LogLine) {
+		go func(wg *sync.WaitGroup, c chan *matcher, r *Rule, l *LogLine) {
 			defer wg.Done()
 			if len(r.Checks) > 0 && r.Checks[0].CheckLine(l.Content) {
 				c <- newMatcher(line, r)
@@ -76,7 +76,7 @@ func InitialCheckLine(line *LogLine, rules []*Rule) []*Matcher {
 	}
 
 	wg.Wait()
-	matchers := []*Matcher{}
+	matchers := []*matcher{}
 
 	for {
 		select {
@@ -88,17 +88,17 @@ func InitialCheckLine(line *LogLine, rules []*Rule) []*Matcher {
 	}
 }
 
-func newMatcher(firstLine *LogLine, rule *Rule) *Matcher {
-	return &Matcher{
-		LineChannel:     make(chan *LogLine, rule.GetNeededLineCount()),
+func newMatcher(firstLine *LogLine, rule *Rule) *matcher {
+	return &matcher{
+		LineChannel:     make(chan *LogLine, rule.getNeededLineCount()),
 		DoneChannel:     make(chan struct{}),
 		Rule:            rule,
 		FirstLine:       firstLine,
-		FinalLineNumber: firstLine.LineNumber + rule.GetNeededLineCount() - 1,
+		FinalLineNumber: firstLine.LineNumber + rule.getNeededLineCount() - 1,
 	}
 }
 
-func RunMatcher(ctx context.Context, m *Matcher, mc chan *ParseMatch) {
+func runMatcher(ctx context.Context, m *matcher, mc chan *ParseMatch) {
 	defer close(m.DoneChannel)
 	matchedLines := []*LogLine{m.FirstLine}
 	checkIndex := 1 // Already matched the first line

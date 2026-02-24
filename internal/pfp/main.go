@@ -98,7 +98,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	stats := Stats{}
 	reader := bufio.NewReader(r)
 
-	activeMatchers := []*Matcher{}
+	activeMatchers := []*matcher{}
 	matches := []*ParseMatch{}
 
 	matchChan := make(chan *ParseMatch, 100)
@@ -129,18 +129,18 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 			LineNumber: lineNo,
 		}
 
-		activeMatchers = PurgeInactiveMatchers(lineNo, activeMatchers)
-		BroadcastLogLine(line, activeMatchers)
+		activeMatchers = purgeInactiveMatchers(lineNo, activeMatchers)
+		broadcastLogLine(line, activeMatchers)
 
-		pendingMatchers := InitialCheckLine(line, rules)
+		pendingMatchers := initialCheckLine(line, rules)
 		for _, m := range pendingMatchers {
-			go RunMatcher(ctx, m, matchChan)
+			go runMatcher(ctx, m, matchChan)
 		}
 
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)
 
 		activeMatchers = append(activeMatchers, pendingMatchers...)
-		newMatches := GetNewParseMatches(matchChan)
+		newMatches := getNewParseMatches(matchChan)
 		if len(newMatches) > 0 {
 			matches = append(matches, newMatches...)
 			if len(matches) > maxMatches {
@@ -154,7 +154,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	for _, m := range activeMatchers {
 		<-m.DoneChannel
 	}
-	matches = append(matches, GetNewParseMatches(matchChan)...)
+	matches = append(matches, getNewParseMatches(matchChan)...)
 
 	stats.LinesParsed = lineNo
 	stats.CompleteMatches = len(matches)
