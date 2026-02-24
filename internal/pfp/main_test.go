@@ -261,7 +261,7 @@ func TestParse(t *testing.T) {
 	t.Run("handles line that's way too long", func(t *testing.T) {
 		sb := strings.Builder{}
 		sb.WriteString("Starting line\n")
-		sb.WriteString(strings.Repeat("x", 66536))
+		sb.WriteString(strings.Repeat("x", 4097))
 		sb.WriteString("\nEnding line\n")
 
 		reader := io.NopCloser(strings.NewReader(sb.String()))
