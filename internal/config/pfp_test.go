@@ -292,6 +292,7 @@ func TestValidate(t *testing.T) {
 						{RegexText: "ERROR", Regex: nil},
 						{RegexText: "FATAL", Regex: nil},
 					},
+					MaxLines: 5,
 				},
 				{
 					Name: "warning-rule",
@@ -369,6 +370,27 @@ func TestValidate(t *testing.T) {
 		err := lpc.Validate()
 		if err == nil {
 			t.Fatal("Expected error for second rule with 0 checks, got nil")
+		}
+	})
+
+	t.Run("returns error for rule with checks but no maxlines set", func(t *testing.T) {
+		lpc := &LogParserConfig{
+			Rules: []*pfp.Rule{
+				{
+					Name:   "testing rule",
+					Checks: []pfp.LineMatcher{{}, {}}, // Just some empty checks to trigger the error
+				},
+			},
+		}
+
+		err := lpc.Validate()
+		// Check error message contains expected text
+		if err == nil {
+			t.Fatal("Expected error for rule with checks but no maxlines set, got nil")
+		}
+		expectedErrMsg := "rule 0 (testing rule) has multiple checks but maxlines is not set"
+		if err.Error() != expectedErrMsg {
+			t.Fatalf("Expected error message %q, got %q", expectedErrMsg, err.Error())
 		}
 	})
 }

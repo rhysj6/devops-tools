@@ -56,6 +56,10 @@ func (c *LogParserConfig) Validate() error {
 	for i, r := range c.Rules {
 		if len(r.Checks) == 0 {
 			return fmt.Errorf("rule %d (%q) has 0 checks", i, r.Name)
+		} else {
+			if r.MaxLines == 0 && len(r.Checks) > 1 {
+				return fmt.Errorf("rule %d (%v) has multiple checks but maxlines is not set", i, r.Name)
+			}
 		}
 	}
 
