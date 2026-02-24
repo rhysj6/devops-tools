@@ -212,9 +212,6 @@ func TestParse(t *testing.T) {
 		if stats.LinesParsed != 4 {
 			t.Fatalf("LinesParsed = %d, want 4", stats.LinesParsed)
 		}
-		if stats.Duration == 0 {
-			t.Fatal("Duration should be non-zero")
-		}
 	})
 
 	t.Run("returns no matches when rules are empty", func(t *testing.T) {
@@ -258,20 +255,6 @@ func TestParse(t *testing.T) {
 		}
 		if stats.LinesParsed != 1 {
 			t.Fatalf("LinesParsed = %d, want 1", stats.LinesParsed)
-		}
-	})
-
-	t.Run("measures duration", func(t *testing.T) {
-		input := strings.Repeat("line\n", 10)
-		reader := io.NopCloser(strings.NewReader(input))
-
-		_, stats, err := Parse(reader, []*Rule{}, 100)
-		if err != nil {
-			t.Fatalf("Parse returned error: %v", err)
-		}
-
-		if stats.Duration <= 0 {
-			t.Fatalf("Duration should be positive, got %v", stats.Duration)
 		}
 	})
 }

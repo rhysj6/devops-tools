@@ -32,16 +32,23 @@ type RecursiveLogSource interface {
 }
 
 func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
+	startTime := time.Now()
 	logs, err := source.GetLogs()
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
 	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream failed builds, we can just parse the logs once and return the results.
+
+	if ok {
+		rules = append(rules, recursiveSource.GetDownstreamFailedBuildRule())
+	}
+	matches, stats, err := Parse(logs, rules, maxMatches)
+
 	if !ok {
-		return Parse(logs, rules, maxMatches)
+		stats.Duration = time.Since(startTime)
+		return matches, stats, err
 	}
 
-	matches, stats, err := Parse(logs, append(rules, recursiveSource.GetDownstreamFailedBuildRule()), maxMatches)
 	if err != nil {
 		return nil, stats, fmt.Errorf("failed to parse logs: %w", err)
 	}
@@ -71,6 +78,9 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 			customMatches = append(customMatches, m)
 		}
 	}
+
+	stats.Duration = time.Since(startTime)
+
 	// Filter out the downstream failure mentions if there are recognised matches in the final logs.
 	if len(customMatches) > 0 {
 		stats.CompleteMatches = len(customMatches)
@@ -85,7 +95,6 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	defer r.Close()
 	defer cancel()
 	stats := Stats{}
-	startTime := time.Now()
 	scanner := bufio.NewScanner(r)
 
 	activeMatchers := []*Matcher{}
@@ -132,7 +141,6 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	}
 	matches = append(matches, GetNewParseMatches(matchChan)...)
 
-	stats.Duration = time.Since(startTime)
 	stats.LinesParsed = lineNo
 	stats.CompleteMatches = len(matches)
 
