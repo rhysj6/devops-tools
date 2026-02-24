@@ -13,6 +13,15 @@ import (
 
 var ErrUnauthorized = errors.New("jenkins authentication failed")
 
+type Client interface {
+	IsJobURL(string) bool
+	GetJobNameAndNumberFromURL(string) (string, int, error)
+	GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error)
+	GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error)
+}
+
+var _ Client = (*JenkinsClient)(nil)
+
 type JenkinsClient struct {
 	URL      string `mapstructure:"url"`
 	Username string `mapstructure:"username"`

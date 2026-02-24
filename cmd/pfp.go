@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
@@ -75,42 +73,24 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("pfp config is not set")
 	}
 
-	var rc io.ReadCloser
+	var logSource pfp.LogSource
 
 	switch source {
 	case "file":
-		rc, err = loadFile(args[0])
-		if err != nil {
-			return err
-		}
+		logSource = &pfp.FileLogSource{FilePath: args[0]}
 	case "jenkins":
 		if cfg.Jenkins.URL == "" {
 			return fmt.Errorf("Jenkins URL is not set")
 		}
-		var jobName string
-		var buildNumber int
-		if len(args) == 1 {
-			jobName, buildNumber, err = cfg.Jenkins.GetJobNameAndNumberFromURL(args[0])
-			if err != nil {
-				return err
-			}
-		} else {
-			jobName = args[0]
-			buildNumber, err = strconv.Atoi(args[1])
-			if err != nil {
-				return err
-			}
-		}
-		rc, err = cfg.Jenkins.GetBuildLogs(jobName, buildNumber)
+		logSource, err = pfp.NewJenkinsLogSource(cfg.Jenkins, args)
 		if err != nil {
 			return err
 		}
+	default:
+		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	defer rc.Close()
-	re := bufio.NewReader(rc)
-
-	matches, stats, err := pfp.Parse(re, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	matches, stats, err := pfp.ParseFromSource(logSource, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
 	pfp.TextOutput(os.Stdout, matches, stats)
 	return err
 }
