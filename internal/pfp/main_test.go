@@ -271,8 +271,8 @@ func TestParse(t *testing.T) {
 			t.Fatalf("Parse returned error: %v", err)
 		}
 
-		if stats.LinesParsed != 2 {
-			t.Fatalf("LinesParsed = %d, want 2", stats.LinesParsed)
+		if stats.LinesParsed != 3 {
+			t.Fatalf("LinesParsed = %d, want 3", stats.LinesParsed)
 		}
 	})
 }
