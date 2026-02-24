@@ -92,7 +92,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 	})
 
-	t.Run("successfully parses logs when downstream builds are supported and returns downstream matches if there aren't any final log matches", func(t *testing.T) {
+	t.Run("successfully parses logs when downstream logs are supported and returns downstream matches if there aren't any final log matches", func(t *testing.T) {
 		downstreamLogRule := &Rule{
 			Checks: []LineMatcher{{Contains: "downstream log line"}},
 		}
@@ -133,7 +133,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 	})
 
-	t.Run("calls Parse when downstream builds not supported", func(t *testing.T) {
+	t.Run("calls Parse when downstream logs not supported", func(t *testing.T) {
 		mockSource := &MockLogSource{
 			logs: io.NopCloser(strings.NewReader("test\n")),
 		}

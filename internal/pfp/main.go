@@ -23,7 +23,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
-	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream failed builds, we can just parse the logs once and return the results.
+	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
 	if ok {
 		rules = append(rules, recursiveSource.GetDownstreamErrorRule())
@@ -43,11 +43,11 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
 			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
-				return nil, stats, fmt.Errorf("failed to get downstream failed build logs: %w", err)
+				return nil, stats, fmt.Errorf("failed to get downstream error logs: %w", err)
 			}
 			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches)
 			if err != nil {
-				return nil, stats, fmt.Errorf("failed to parse downstream failed build logs: %w", err)
+				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
 			matches = append(matches, downstreamMatches...)
 			stats.PartialMatches += downstreamStats.PartialMatches
