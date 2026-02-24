@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -95,23 +96,37 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	defer r.Close()
 	defer cancel()
 	stats := Stats{}
-	scanner := bufio.NewScanner(r)
+	reader := bufio.NewReader(r)
 
 	activeMatchers := []*Matcher{}
 	matches := []*ParseMatch{}
 
 	matchChan := make(chan *ParseMatch, 100)
 
-	lineNo := 1
-	for scanner.Scan() {
+	lineNo := 0
+	for {
 		lineNo++
-		line := &LogLine{
-			Content:    scanner.Text(),
-			LineNumber: lineNo,
+		// Read the line, if the line is more than 4kb then discard it.
+		lineBytes, err := reader.ReadSlice('\n')
+
+		if err == io.EOF && len(lineBytes) == 0 {
+			lineNo-- // Don't count the EOF as a line
+			break
+		} else if err == bufio.ErrBufferFull {
+			fmt.Printf("Warning: skipping line %d as it's more than 4kb\n", lineNo)
+			// Discard the rest of the line
+			_, err := reader.ReadString('\n')
+			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+				return nil, stats, fmt.Errorf("Reader error: %w \n Log line number %v:", err, lineNo)
+			}
+			continue
+		} else if err != nil && err != io.EOF {
+			return nil, stats, fmt.Errorf("Reader error: %w \n Log line number %v:", err, lineNo)
 		}
 
-		if err := scanner.Err(); err != nil {
-			return nil, stats, fmt.Errorf("Scanner error: %w \n Log line number %v:", err, lineNo)
+		line := &LogLine{
+			Content:    strings.TrimRight(string(lineBytes), "\n"),
+			LineNumber: lineNo,
 		}
 
 		activeMatchers = PurgeInactiveMatchers(lineNo, activeMatchers)
