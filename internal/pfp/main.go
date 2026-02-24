@@ -26,7 +26,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream failed builds, we can just parse the logs once and return the results.
 
 	if ok {
-		rules = append(rules, recursiveSource.GetDownstreamFailedBuildRule())
+		rules = append(rules, recursiveSource.GetDownstreamErrorRule())
 	}
 	matches, stats, err := Parse(logs, rules, maxMatches)
 
@@ -40,8 +40,8 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	}
 
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
-		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamFailedBuildRule() {
-			downstreamLogs, err := recursiveSource.GetDownstreamFailedBuildLogs(matches[0])
+		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
+			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to get downstream failed build logs: %w", err)
 			}
@@ -60,7 +60,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 
 	customMatches := []*ParseMatch{}
 	for _, m := range matches {
-		if m.Rule != recursiveSource.GetDownstreamFailedBuildRule() {
+		if m.Rule != recursiveSource.GetDownstreamErrorRule() {
 			customMatches = append(customMatches, m)
 		}
 	}
