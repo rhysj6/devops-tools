@@ -65,6 +65,17 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 		}
 	}
 
+	customMatches := []*ParseMatch{}
+	for _, m := range matches {
+		if m.Rule != recursiveSource.GetDownstreamFailedBuildRule() {
+			customMatches = append(customMatches, m)
+		}
+	}
+	// Filter out the downstream failure mentions if there are recognised matches in the final logs.
+	if len(customMatches) > 0 {
+		return customMatches, stats, nil
+	}
+
 	return matches, stats, nil
 }
 

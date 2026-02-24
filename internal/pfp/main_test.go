@@ -51,7 +51,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 	})
 
-	t.Run("successfully parses logs when downstream builds are supported", func(t *testing.T) {
+	t.Run("successfully parses logs when downstream builds are supported and only returns final log matches if there are any", func(t *testing.T) {
 		downstreamLogRule := &Rule{
 			Checks: []LineMatcher{{Contains: "downstream log line"}},
 		}
@@ -84,16 +84,54 @@ func TestParseFromSource(t *testing.T) {
 			t.Fatal("Expected some lines to be parsed")
 		}
 
-		if len(matches) != 2 { // We expect one match for the downstream log line and one match for the final log line
-			t.Fatalf("Expected 2 matches, got %d", len(matches))
+		if len(matches) != 1 {
+			t.Fatalf("Expected 1 match, got %d", len(matches))
+		}
+
+		if matches[0].Rule != finalLogRule {
+			t.Fatal("Expected first match to be for finalLogRule")
+		}
+	})
+
+	t.Run("successfully parses logs when downstream builds are supported and returns downstream matches if there aren't any final log matches", func(t *testing.T) {
+		downstreamLogRule := &Rule{
+			Checks: []LineMatcher{{Contains: "downstream log line"}},
+		}
+		finalLogRule := &Rule{
+			Checks: []LineMatcher{{Contains: "2nd level"}},
+		}
+
+		mockSource := &MockLogSource{
+			logs:                          io.NopCloser(strings.NewReader("line1\nline2\nline3\ndownstream log line\n")),
+			supportDownstreamFailedBuilds: true,
+			GetDownstreamFailedBuildRuleFunc: func() *Rule {
+				return downstreamLogRule
+			},
+			GetDownstreamFailedBuildLogsFunc: func(pm *ParseMatch) (io.ReadCloser, error) {
+				if pm.Rule != downstreamLogRule {
+					return nil, errors.New("unexpected rule in GetDownstreamFailedBuildLogs")
+				}
+				return io.NopCloser(strings.NewReader("something else\n")), nil
+			},
+		}
+
+		rules := []*Rule{finalLogRule}
+		matches, stats, err := ParseFromSource(mockSource, rules, 10)
+
+		if err != nil {
+			t.Fatalf("ParseFromSource returned error: %v", err)
+		}
+
+		if stats.LinesParsed == 0 {
+			t.Fatal("Expected some lines to be parsed")
+		}
+
+		if len(matches) != 1 {
+			t.Fatalf("Expected 1 match, got %d", len(matches))
 		}
 
 		if matches[0].Rule != downstreamLogRule {
 			t.Fatal("Expected first match to be for downstreamLogRule")
-		}
-
-		if matches[1].Rule != finalLogRule {
-			t.Fatal("Expected second match to be for finalLogRule")
 		}
 	})
 
