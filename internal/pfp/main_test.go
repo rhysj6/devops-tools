@@ -257,4 +257,22 @@ func TestParse(t *testing.T) {
 			t.Fatalf("LinesParsed = %d, want 0", stats.LinesParsed)
 		}
 	})
+
+	t.Run("handles line that's way too long", func(t *testing.T) {
+		sb := strings.Builder{}
+		sb.WriteString("Starting line\n")
+		sb.WriteString(strings.Repeat("x", 66536))
+		sb.WriteString("\nEnding line\n")
+
+		reader := io.NopCloser(strings.NewReader(sb.String()))
+
+		_, stats, err := Parse(reader, []*Rule{}, 10)
+		if err != nil {
+			t.Fatalf("Parse returned error: %v", err)
+		}
+
+		if stats.LinesParsed != 2 {
+			t.Fatalf("LinesParsed = %d, want 2", stats.LinesParsed)
+		}
+	})
 }
