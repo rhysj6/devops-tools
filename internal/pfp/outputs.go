@@ -21,7 +21,7 @@ func TextOutput(w io.Writer, matches []*ParseMatch, stats Stats) {
 	for _, m := range matches {
 		fmt.Fprintf(w, "Matched rule: %v \n", m.Rule.Name)
 		fmt.Fprintf(w, "Solution: \n%v\n\n", m.Rule.Solution)
-		fmt.Fprintf(w, "Log excerpt: \n\n")
+		fmt.Fprintf(w, "Log extract: \n\n")
 		for _, l := range m.MatchedLines {
 			fmt.Fprintf(w, "%v: %v \n", l.LineNumber, l.Content)
 		}
