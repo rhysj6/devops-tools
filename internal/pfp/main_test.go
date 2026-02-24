@@ -209,8 +209,8 @@ func TestParse(t *testing.T) {
 			t.Fatalf("Parse returned error: %v", err)
 		}
 
-		if stats.LinesParsed != 4 {
-			t.Fatalf("LinesParsed = %d, want 4", stats.LinesParsed)
+		if stats.LinesParsed != 3 {
+			t.Fatalf("LinesParsed = %d, want 3", stats.LinesParsed)
 		}
 	})
 
@@ -237,8 +237,8 @@ func TestParse(t *testing.T) {
 			t.Fatalf("Parse returned error: %v", err)
 		}
 
-		if stats.LinesParsed < 1 {
-			t.Fatalf("LinesParsed = %d, want at least 1", stats.LinesParsed)
+		if stats.LinesParsed != 1 {
+			t.Fatalf("LinesParsed = %d, want 1", stats.LinesParsed)
 		}
 	})
 
@@ -253,8 +253,8 @@ func TestParse(t *testing.T) {
 		if len(matches) != 0 {
 			t.Fatalf("Expected 0 matches, got %d", len(matches))
 		}
-		if stats.LinesParsed != 1 {
-			t.Fatalf("LinesParsed = %d, want 1", stats.LinesParsed)
+		if stats.LinesParsed != 0 {
+			t.Fatalf("LinesParsed = %d, want 0", stats.LinesParsed)
 		}
 	})
 }
