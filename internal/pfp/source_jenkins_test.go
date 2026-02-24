@@ -149,7 +149,7 @@ func TestGetDownstreamFailedBuildRule(t *testing.T) {
 		rule := source.GetDownstreamFailedBuildRule()
 		logLines := []string{
 			"Build Example_Build #5 completed: FAILURE",
-			"Build Example_Build #5 build_name completed: FAILURE",
+			"Build Example_Build #5: build_name completed: FAILURE",
 		}
 
 		if len(rule.Checks) != 1 {
@@ -198,7 +198,7 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
-				{Content: "Build My-Job-Name #123 some_build_name completed: FAILURE"},
+				{Content: "Build My-Job-Name #123: some_build_name completed: FAILURE"},
 			},
 		}
 
