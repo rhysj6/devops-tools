@@ -18,7 +18,7 @@ type Rule struct {
 	Solution string
 }
 
-func (r Rule) GetNeededLineCount() int {
+func (r Rule) getNeededLineCount() int {
 	if len(r.Checks) <= 1 {
 		return 1
 	}

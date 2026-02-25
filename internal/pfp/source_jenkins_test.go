@@ -139,14 +139,14 @@ func TestNewJenkinsLogSource(t *testing.T) {
 func TestGetDownstreamFailedBuildRule(t *testing.T) {
 	source := &JenkinsLogSource{}
 	t.Run("returns Rule", func(t *testing.T) {
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		if rule == nil {
 			t.Fatal("Expected non-nil Rule, got nil")
 		}
 	})
 
 	t.Run("rule matches log line", func(t *testing.T) {
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		logLines := []string{
 			"Build Example_Build #5 completed: FAILURE",
 			"Build Example_Build #5: build_name completed: FAILURE",
@@ -172,7 +172,7 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	source := &JenkinsLogSource{}
 
 	t.Run("successfully extracts job name and build number", func(t *testing.T) {
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
@@ -194,7 +194,7 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	})
 
 	t.Run("extracts from log line with optional build name", func(t *testing.T) {
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
@@ -235,7 +235,7 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	})
 
 	t.Run("returns error when regex does not match", func(t *testing.T) {
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
@@ -308,7 +308,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			},
 		}
 
-		logs, err := source.GetDownstreamFailedBuildLogs(match)
+		logs, err := source.GetDownstreamErrorLogs(match)
 		if err == nil {
 			t.Error("Expected error for match with irrelevant rule, got nil")
 		}
@@ -320,13 +320,13 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 		source := &JenkinsLogSource{
 			client: &MockJenkinsClient{},
 		}
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule:         rule,
 			MatchedLines: []*LogLine{},
 		}
 
-		logs, err := source.GetDownstreamFailedBuildLogs(match)
+		logs, err := source.GetDownstreamErrorLogs(match)
 		if err == nil {
 			t.Error("Expected error for empty matched lines, got nil")
 		}
@@ -339,7 +339,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 		source := &JenkinsLogSource{
 			client: &MockJenkinsClient{},
 		}
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
@@ -347,7 +347,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			},
 		}
 
-		logs, err := source.GetDownstreamFailedBuildLogs(match)
+		logs, err := source.GetDownstreamErrorLogs(match)
 		if err == nil {
 			t.Error("Expected error when extraction fails, got nil")
 		}
@@ -367,7 +367,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			},
 		}
 		source := &JenkinsLogSource{client: mockClient}
-		rule := source.GetDownstreamFailedBuildRule()
+		rule := source.GetDownstreamErrorRule()
 		match := &ParseMatch{
 			Rule: rule,
 			MatchedLines: []*LogLine{
@@ -375,7 +375,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			},
 		}
 
-		logs, err := source.GetDownstreamFailedBuildLogs(match)
+		logs, err := source.GetDownstreamErrorLogs(match)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}

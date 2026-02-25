@@ -17,31 +17,16 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
-type LogSource interface {
-	// Get the logs to be parsed. This should return an io.ReadCloser that can be used to read the logs line by line.
-	GetLogs() (io.ReadCloser, error)
-}
-
-type RecursiveLogSource interface {
-	LogSource
-	// GetDownstreamFailedBuildRule returns the rule that should match a log line to be considered the results of a failed downstream build.
-	GetDownstreamFailedBuildRule() *Rule
-	// GetDownstreamFailedBuildLogs returns the logs of a downstream failed build given a ParseMatch that contains the rule that matched the failed downstream build and the log lines that matched that rule.
-	GetDownstreamFailedBuildLogs(*ParseMatch) (io.ReadCloser, error)
-	// GetMaxRecursionDepth returns the maximum recursion depth for parsing downstream failed builds. This is to prevent infinite recursion in case of circular dependencies between builds. If not implemented, it defaults to 3, meaning that only one level of downstream failed builds will be parsed.
-	GetMaxRecursionDepth() int
-}
-
 func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
-	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream failed builds, we can just parse the logs once and return the results.
+	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
 	if ok {
-		rules = append(rules, recursiveSource.GetDownstreamFailedBuildRule())
+		rules = append(rules, recursiveSource.GetDownstreamErrorRule())
 	}
 	matches, stats, err := Parse(logs, rules, maxMatches)
 
@@ -55,14 +40,14 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	}
 
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
-		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamFailedBuildRule() {
-			downstreamLogs, err := recursiveSource.GetDownstreamFailedBuildLogs(matches[0])
+		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
+			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
-				return nil, stats, fmt.Errorf("failed to get downstream failed build logs: %w", err)
+				return nil, stats, fmt.Errorf("failed to get downstream error logs: %w", err)
 			}
 			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches)
 			if err != nil {
-				return nil, stats, fmt.Errorf("failed to parse downstream failed build logs: %w", err)
+				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
 			matches = append(matches, downstreamMatches...)
 			stats.PartialMatches += downstreamStats.PartialMatches
@@ -75,7 +60,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 
 	customMatches := []*ParseMatch{}
 	for _, m := range matches {
-		if m.Rule != recursiveSource.GetDownstreamFailedBuildRule() {
+		if m.Rule != recursiveSource.GetDownstreamErrorRule() {
 			customMatches = append(customMatches, m)
 		}
 	}
@@ -98,7 +83,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	stats := Stats{}
 	reader := bufio.NewReader(r)
 
-	activeMatchers := []*Matcher{}
+	activeMatchers := []*matcher{}
 	matches := []*ParseMatch{}
 
 	matchChan := make(chan *ParseMatch, 100)
@@ -129,18 +114,18 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 			LineNumber: lineNo,
 		}
 
-		activeMatchers = PurgeInactiveMatchers(lineNo, activeMatchers)
-		BroadcastLogLine(line, activeMatchers)
+		activeMatchers = purgeInactiveMatchers(lineNo, activeMatchers)
+		broadcastLogLine(line, activeMatchers)
 
-		pendingMatchers := InitialCheckLine(line, rules)
+		pendingMatchers := initialCheckLine(line, rules)
 		for _, m := range pendingMatchers {
-			go RunMatcher(ctx, m, matchChan)
+			go runMatcher(ctx, m, matchChan)
 		}
 
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)
 
 		activeMatchers = append(activeMatchers, pendingMatchers...)
-		newMatches := GetNewParseMatches(matchChan)
+		newMatches := getNewParseMatches(matchChan)
 		if len(newMatches) > 0 {
 			matches = append(matches, newMatches...)
 			if len(matches) > maxMatches {
@@ -154,7 +139,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 	for _, m := range activeMatchers {
 		<-m.DoneChannel
 	}
-	matches = append(matches, GetNewParseMatches(matchChan)...)
+	matches = append(matches, getNewParseMatches(matchChan)...)
 
 	stats.LinesParsed = lineNo
 	stats.CompleteMatches = len(matches)

@@ -30,7 +30,7 @@ func TestRuleGetNeededLineCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := tt.rule.GetNeededLineCount()
+			r := tt.rule.getNeededLineCount()
 
 			if r != tt.expected {
 				t.Fatalf("Expected %v lines got %v", tt.expected, r)

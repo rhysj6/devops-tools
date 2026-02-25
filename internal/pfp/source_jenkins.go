@@ -49,7 +49,7 @@ func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 	return j.client.GetBuildLogs(j.jobName, j.buildNumber)
 }
 
-func (j *JenkinsLogSource) GetDownstreamFailedBuildRule() *Rule {
+func (j *JenkinsLogSource) GetDownstreamErrorRule() *Rule {
 	if j.downstreamFailedBuildRule == nil {
 		j.downstreamFailedBuildRule = &Rule{
 			Name: "Downstream Failed Jenkins Build",
@@ -85,8 +85,8 @@ func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *ParseMatch) 
 	return jobName, buildNumber, nil
 }
 
-func (j *JenkinsLogSource) GetDownstreamFailedBuildLogs(match *ParseMatch) (io.ReadCloser, error) {
-	if match.Rule != j.GetDownstreamFailedBuildRule() {
+func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *ParseMatch) (io.ReadCloser, error) {
+	if match.Rule != j.GetDownstreamErrorRule() {
 		return nil, fmt.Errorf("match rule does not match downstream failed build rule")
 	}
 	if len(match.MatchedLines) == 0 {
