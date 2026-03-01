@@ -42,6 +42,9 @@ func TestRuleGetNeededLineCount(t *testing.T) {
 
 func TestCheckLine(t *testing.T) {
 	re1, err := regexp.Compile(`ERROR:`)
+	if err != nil {
+		t.Fatal("Error compiling regex")
+	}
 	re2, err := regexp.Compile(`ERROR:Hi`)
 	if err != nil {
 		t.Fatal("Error compiling regex")

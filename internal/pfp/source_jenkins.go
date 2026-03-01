@@ -39,7 +39,7 @@ func NewJenkinsLogSource(client jenkins.Client, cmdArgs []string) (*JenkinsLogSo
 		}
 		j.buildNumber = buildNumber
 	} else {
-		return nil, fmt.Errorf("Expected either 1 or 2 arguments, got %v", len(cmdArgs))
+		return nil, fmt.Errorf("expected either 1 or 2 arguments, got %v", len(cmdArgs))
 	}
 
 	return j, nil

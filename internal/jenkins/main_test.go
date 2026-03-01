@@ -152,7 +152,7 @@ func TestGetBuildLogs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 
 		body, err := io.ReadAll(reader)
 		if err != nil {
@@ -182,7 +182,7 @@ func TestGetBuildLogs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
-		reader.Close()
+		_ = reader.Close()
 	})
 
 	t.Run("returns no error for correct credentials", func(t *testing.T) {

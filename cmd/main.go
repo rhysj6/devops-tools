@@ -12,7 +12,7 @@ func GetCommand() *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().StringP("config", "c", "", "Path to config file")
-	rootCmd.MarkFlagFilename("config", "yaml")
+	_ = rootCmd.MarkFlagFilename("config", "yaml")
 
 	addPfpCommands(rootCmd)
 

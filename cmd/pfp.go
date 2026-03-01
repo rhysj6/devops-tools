@@ -71,7 +71,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		logSource = &pfp.FileLogSource{FilePath: args[0]}
 	case "jenkins":
 		if cfg.Jenkins.URL == "" {
-			return fmt.Errorf("Jenkins URL is not set")
+			return fmt.Errorf("the Jenkins URL is not set")
 		}
 		logSource, err = pfp.NewJenkinsLogSource(cfg.Jenkins, args)
 		if err != nil {

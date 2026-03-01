@@ -6,24 +6,24 @@ import (
 )
 
 func TextOutput(w io.Writer, matches []*ParseMatch, stats Stats) {
-	fmt.Fprintln(w, "Stats:")
-	fmt.Fprintf(w, "Lines parsed:         %v \n", stats.LinesParsed)
-	fmt.Fprintf(w, "Duration:             %v \n", stats.Duration)
-	fmt.Fprintf(w, "Partial Matches:      %v \n", stats.PartialMatches)
-	fmt.Fprintf(w, "Complete Matches:     %v \n", stats.CompleteMatches)
+	_, _ = fmt.Fprintln(w, "Stats:")
+	_, _ = fmt.Fprintf(w, "Lines parsed:         %v \n", stats.LinesParsed)
+	_, _ = fmt.Fprintf(w, "Duration:             %v \n", stats.Duration)
+	_, _ = fmt.Fprintf(w, "Partial Matches:      %v \n", stats.PartialMatches)
+	_, _ = fmt.Fprintf(w, "Complete Matches:     %v \n", stats.CompleteMatches)
 
 	if len(matches) == 0 {
-		fmt.Fprintln(w, "No matches found")
+		_, _ = fmt.Fprintln(w, "No matches found")
 		return
 	}
-	fmt.Fprintln(w, "Matches:")
+	_, _ = fmt.Fprintln(w, "Matches:")
 
 	for _, m := range matches {
-		fmt.Fprintf(w, "Matched rule: %v \n", m.Rule.Name)
-		fmt.Fprintf(w, "Solution: \n%v\n\n", m.Rule.Solution)
-		fmt.Fprintf(w, "Log extract: \n\n")
+		_, _ = fmt.Fprintf(w, "Matched rule: %v \n", m.Rule.Name)
+		_, _ = fmt.Fprintf(w, "Solution: \n%v\n\n", m.Rule.Solution)
+		_, _ = fmt.Fprintf(w, "Log extract: \n\n")
 		for _, l := range m.MatchedLines {
-			fmt.Fprintf(w, "%v: %v \n", l.LineNumber, l.Content)
+			_, _ = fmt.Fprintf(w, "%v: %v \n", l.LineNumber, l.Content)
 		}
 	}
 }

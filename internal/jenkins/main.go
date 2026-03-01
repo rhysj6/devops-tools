@@ -108,11 +108,11 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, ErrUnauthorized
 	}
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("failed to fetch build logs: status %d", resp.StatusCode)
 	}
 
