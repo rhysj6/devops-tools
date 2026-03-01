@@ -41,11 +41,11 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 		}
 	}
 
-	v.BindPFlag("pfp.maxmatches", cmd.Flags().Lookup("max-matches"))
-	v.BindPFlag("pfp.output", cmd.Flags().Lookup("output"))
-	v.BindEnv("jenkins.url", "DEVOPS_TOOLS_JENKINS_URL", "HUDSON_URL")
-	v.BindEnv("jenkins.username")
-	v.BindEnv("jenkins.password")
+	_ = v.BindPFlag("pfp.maxmatches", cmd.Flags().Lookup("max-matches"))
+	_ = v.BindPFlag("pfp.output", cmd.Flags().Lookup("output"))
+	_ = v.BindEnv("jenkins.url", "DEVOPS_TOOLS_JENKINS_URL", "HUDSON_URL")
+	_ = v.BindEnv("jenkins.username")
+	_ = v.BindEnv("jenkins.password")
 
 	var config Config
 

@@ -33,7 +33,9 @@ func TestFileLogSource_GetLogs(t *testing.T) {
 		if string(content) != testContent {
 			t.Errorf("Expected content %q, got %q", testContent, string(content))
 		}
-		reader.Close()
+		if err := reader.Close(); err != nil {
+			t.Errorf("Failed to close reader: %v", err)
+		}
 	})
 
 	t.Run("returns error for non-existent file", func(t *testing.T) {
@@ -45,7 +47,7 @@ func TestFileLogSource_GetLogs(t *testing.T) {
 
 		if reader != nil {
 			t.Errorf("Expected nil reader for non-existent file, got non-nil")
-			defer reader.Close()
+			defer func() { _ = reader.Close() }()
 		}
 	})
 
@@ -71,7 +73,7 @@ func TestFileLogSource_GetLogs(t *testing.T) {
 		}
 		if reader != nil {
 			t.Error("Expected nil reader for empty file path")
-			reader.Close()
+			_ = reader.Close()
 		}
 	})
 }

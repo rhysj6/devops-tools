@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 		cmd.Flags().String("output", "", "")
 
 		// Unset DEVOPS_TOOLS_JENKINS_URL if it exists
-		os.Unsetenv("DEVOPS_TOOLS_JENKINS_URL")
+		_ = os.Unsetenv("DEVOPS_TOOLS_JENKINS_URL")
 		t.Setenv("HUDSON_URL", "https://fallback.jenkins.com")
 
 		cfg, err := LoadConfig(cmd)

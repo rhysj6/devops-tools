@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/rhysj6/devops-tools/internal/config"
@@ -56,14 +55,6 @@ func addPfpCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(pfpCmd)
 }
 
-func loadFile(path string) (io.ReadCloser, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
-}
-
 func runPfp(cmd *cobra.Command, source string, args []string) error {
 	cfg, err := config.LoadConfig(cmd)
 	if err != nil {
@@ -80,7 +71,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		logSource = &pfp.FileLogSource{FilePath: args[0]}
 	case "jenkins":
 		if cfg.Jenkins.URL == "" {
-			return fmt.Errorf("Jenkins URL is not set")
+			return fmt.Errorf("the Jenkins URL is not set")
 		}
 		logSource, err = pfp.NewJenkinsLogSource(cfg.Jenkins, args)
 		if err != nil {

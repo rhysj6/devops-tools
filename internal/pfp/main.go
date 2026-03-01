@@ -78,7 +78,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 
 func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	defer cancel()
 	stats := Stats{}
 	reader := bufio.NewReader(r)
@@ -102,11 +102,11 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
-				return nil, stats, fmt.Errorf("Reader error: %w \n Log line number %v:", err, lineNo)
+				return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 			}
 			continue
 		} else if err != nil && err != io.EOF {
-			return nil, stats, fmt.Errorf("Reader error: %w \n Log line number %v:", err, lineNo)
+			return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 		}
 
 		line := &LogLine{
