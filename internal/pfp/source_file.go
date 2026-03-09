@@ -4,9 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
-var _ LogSource = (*FileLogSource)(nil)
+var _ logparser.LogSource = (*FileLogSource)(nil)
 
 type FileLogSource struct {
 	FilePath string

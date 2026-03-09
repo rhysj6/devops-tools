@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/rhysj6/devops-tools/internal/pfp"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
 func (c *Config) SetupConfig() error {
@@ -27,9 +27,9 @@ func (c *Config) SetupConfig() error {
 }
 
 type LogParserConfig struct {
-	Rules      []*pfp.Rule `mapstructure:"rules"`
-	Output     string      `mapstructure:"output"`
-	MaxMatches int         `mapstructure:"maxmatches"`
+	Rules      []*logparser.Rule `mapstructure:"rules"`
+	Output     string            `mapstructure:"output"`
+	MaxMatches int               `mapstructure:"maxmatches"`
 }
 
 func (c *LogParserConfig) CompileRegex() error {

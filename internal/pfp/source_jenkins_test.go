@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rhysj6/devops-tools/internal/jenkins"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
 var _ jenkins.Client = (*MockJenkinsClient)(nil)
@@ -173,9 +174,9 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("successfully extracts job name and build number", func(t *testing.T) {
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule: rule,
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example Build #42 completed: FAILURE"},
 			},
 		}
@@ -195,9 +196,9 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("extracts from log line with optional build name", func(t *testing.T) {
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule: rule,
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build My-Job-Name #123: some_build_name completed: FAILURE"},
 			},
 		}
@@ -216,13 +217,13 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	})
 
 	t.Run("returns error when regex is nil", func(t *testing.T) {
-		match := &ParseMatch{
-			Rule: &Rule{
-				Checks: []LineMatcher{
+		match := &logparser.ParseMatch{
+			Rule: &logparser.Rule{
+				Checks: []logparser.LineMatcher{
 					{Contains: "test", Regex: nil},
 				},
 			},
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #42 completed: FAILURE"},
 			},
 		}
@@ -236,9 +237,9 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("returns error when regex does not match", func(t *testing.T) {
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule: rule,
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "This does not match the expected pattern"},
 			},
 		}
@@ -251,13 +252,13 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	})
 
 	t.Run("returns error when named groups are missing", func(t *testing.T) {
-		match := &ParseMatch{
-			Rule: &Rule{
-				Checks: []LineMatcher{
+		match := &logparser.ParseMatch{
+			Rule: &logparser.Rule{
+				Checks: []logparser.LineMatcher{
 					{Contains: "test", Regex: regexp.MustCompile(`(?m)^Build\s+(.+?)\s+#(\d+)\s+completed:\s+FAILURE\s*$`)},
 				},
 			},
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #42 completed: FAILURE"},
 			},
 		}
@@ -270,13 +271,13 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 	})
 
 	t.Run("returns error when build number is not a valid integer", func(t *testing.T) {
-		match := &ParseMatch{
-			Rule: &Rule{
-				Checks: []LineMatcher{
+		match := &logparser.ParseMatch{
+			Rule: &logparser.Rule{
+				Checks: []logparser.LineMatcher{
 					{Contains: "test", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\D+)\s+completed:\s+FAILURE\s*$`)},
 				},
 			},
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #abc completed: FAILURE"},
 			},
 		}
@@ -301,9 +302,9 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 		source := &JenkinsLogSource{
 			client: &MockJenkinsClient{},
 		}
-		match := &ParseMatch{
-			Rule: &Rule{},
-			MatchedLines: []*LogLine{
+		match := &logparser.ParseMatch{
+			Rule: &logparser.Rule{},
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #5 completed: FAILURE"},
 			},
 		}
@@ -321,9 +322,9 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			client: &MockJenkinsClient{},
 		}
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule:         rule,
-			MatchedLines: []*LogLine{},
+			MatchedLines: []*logparser.LogLine{},
 		}
 
 		logs, err := source.GetDownstreamErrorLogs(match)
@@ -340,9 +341,9 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			client: &MockJenkinsClient{},
 		}
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule: rule,
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Invalid log line format"},
 			},
 		}
@@ -368,9 +369,9 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 		}
 		source := &JenkinsLogSource{client: mockClient}
 		rule := source.GetDownstreamErrorRule()
-		match := &ParseMatch{
+		match := &logparser.ParseMatch{
 			Rule: rule,
-			MatchedLines: []*LogLine{
+			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #5 completed: FAILURE"},
 			},
 		}

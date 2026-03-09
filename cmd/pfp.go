@@ -6,6 +6,7 @@ import (
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +65,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("pfp config is not set")
 	}
 
-	var logSource pfp.LogSource
+	var logSource logparser.LogSource
 
 	switch source {
 	case "file":
@@ -81,7 +82,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	matches, stats, err := pfp.ParseFromSource(logSource, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
-	pfp.TextOutput(os.Stdout, matches, stats)
+	matches, stats, err := logparser.ParseFromSource(logSource, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	logparser.TextOutput(os.Stdout, matches, stats)
 	return err
 }
