@@ -6,6 +6,7 @@ import (
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
+	"github.com/rhysj6/devops-tools/pkg/pfp/filesource"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +69,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 
 	switch source {
 	case "file":
-		logSource = &pfp.FileLogSource{FilePath: args[0]}
+		logSource = &filesource.FileLogSource{FilePath: args[0]}
 	case "jenkins":
 		if cfg.Jenkins.URL == "" {
 			return fmt.Errorf("the Jenkins URL is not set")

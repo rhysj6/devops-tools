@@ -1,4 +1,4 @@
-package pfp
+package filesource
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var _ LogSource = (*FileLogSource)(nil)
+// var _ LogSource = (*FileLogSource)(nil) //TODO: Add this back once the pfp package is moved to a public logparser package and the LogSource interface is defined there.
 
 type FileLogSource struct {
 	FilePath string
