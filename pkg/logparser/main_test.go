@@ -1,4 +1,4 @@
-package pfp
+package logparser
 
 import (
 	"errors"

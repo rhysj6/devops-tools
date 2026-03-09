@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/rhysj6/devops-tools/internal/pfp"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 	"github.com/spf13/cobra"
 )
 
@@ -96,7 +96,7 @@ func TestSetupConfig(t *testing.T) {
 	t.Run("sets default output to text", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules:      []*pfp.Rule{},
+				Rules:      []*logparser.Rule{},
 				Output:     "",
 				MaxMatches: 1,
 			},
@@ -115,7 +115,7 @@ func TestSetupConfig(t *testing.T) {
 	t.Run("sets default MaxMatches to 1", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules:      []*pfp.Rule{},
+				Rules:      []*logparser.Rule{},
 				Output:     "text",
 				MaxMatches: 0,
 			},
@@ -134,7 +134,7 @@ func TestSetupConfig(t *testing.T) {
 	t.Run("preserves non-default values", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules:      []*pfp.Rule{},
+				Rules:      []*logparser.Rule{},
 				Output:     "json",
 				MaxMatches: 5,
 			},
@@ -169,17 +169,17 @@ func TestSetupConfig_Integration(t *testing.T) {
 	t.Run("setup with complex rules and regex", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules: []*pfp.Rule{
+				Rules: []*logparser.Rule{
 					{
 						Name: "errors",
-						Checks: []pfp.LineMatcher{
+						Checks: []logparser.LineMatcher{
 							{RegexText: "ERROR", Regex: nil},
 							{RegexText: "CRITICAL", Regex: nil},
 						},
 					},
 					{
 						Name: "warnings",
-						Checks: []pfp.LineMatcher{
+						Checks: []logparser.LineMatcher{
 							{RegexText: "WARN", Regex: nil},
 						},
 					},
@@ -208,10 +208,10 @@ func TestSetupConfig_Integration(t *testing.T) {
 	t.Run("setup returns error on invalid regex", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules: []*pfp.Rule{
+				Rules: []*logparser.Rule{
 					{
 						Name: "bad",
-						Checks: []pfp.LineMatcher{
+						Checks: []logparser.LineMatcher{
 							{RegexText: "[unclosed", Regex: nil},
 						},
 					},
