@@ -19,6 +19,9 @@ type JenkinsLogSource struct {
 }
 
 func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, error) {
+	if client == nil {
+		return nil, fmt.Errorf("client cannot be nil")
+	}
 
 	j := &JenkinsLogSource{
 		client: client,
