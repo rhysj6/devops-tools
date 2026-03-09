@@ -1,4 +1,4 @@
-package pfp
+package jenkinssource
 
 import (
 	"context"
@@ -8,11 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rhysj6/devops-tools/internal/jenkins"
 	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
-var _ jenkins.Client = (*MockJenkinsClient)(nil)
+var _ Client = (*MockJenkinsClient)(nil)
 
 type MockJenkinsClient struct {
 	GetJobNameAndNumberFromURLFunc func(url string) (string, int, error)

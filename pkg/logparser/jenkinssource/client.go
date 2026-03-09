@@ -1,4 +1,4 @@
-package jenkins
+package jenkinssource
 
 import (
 	"context"

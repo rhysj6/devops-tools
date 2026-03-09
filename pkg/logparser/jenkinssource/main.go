@@ -1,4 +1,4 @@
-package pfp
+package jenkinssource
 
 import (
 	"fmt"
@@ -6,20 +6,22 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/rhysj6/devops-tools/internal/jenkins"
 	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
 var _ logparser.RecursiveLogSource = (*JenkinsLogSource)(nil)
 
 type JenkinsLogSource struct {
-	client                    jenkins.Client
+	client                    Client
 	jobName                   string
 	buildNumber               int
 	downstreamFailedBuildRule *logparser.Rule
 }
 
-func NewJenkinsLogSource(client jenkins.Client, cmdArgs []string) (*JenkinsLogSource, error) {
+func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, error) {
+	if client == nil {
+		return nil, fmt.Errorf("client cannot be nil")
+	}
 
 	j := &JenkinsLogSource{
 		client: client,

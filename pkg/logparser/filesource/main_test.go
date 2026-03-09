@@ -1,4 +1,4 @@
-package pfp
+package filesource
 
 import (
 	"io"
