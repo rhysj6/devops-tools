@@ -6,7 +6,7 @@ import (
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/internal/pfp"
-	"github.com/rhysj6/devops-tools/pkg/pfp/filesource"
+	"github.com/rhysj6/devops-tools/pkg/logparser/filesource"
 	"github.com/spf13/cobra"
 )
 
