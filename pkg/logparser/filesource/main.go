@@ -4,9 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
-// var _ LogSource = (*FileLogSource)(nil) //TODO: Add this back once the pfp package is moved to a public logparser package and the LogSource interface is defined there.
+var _ logparser.LogSource = (*FileLogSource)(nil)
 
 type FileLogSource struct {
 	FilePath string
