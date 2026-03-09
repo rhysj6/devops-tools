@@ -3,16 +3,16 @@ package config
 import (
 	"testing"
 
-	"github.com/rhysj6/devops-tools/internal/pfp"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
 func TestCompileRegex(t *testing.T) {
 	t.Run("compiles valid regex patterns", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "test",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "test.*pattern", Regex: nil},
 					},
 				},
@@ -31,10 +31,10 @@ func TestCompileRegex(t *testing.T) {
 
 	t.Run("handles empty regex text", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "test",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "", Regex: nil},
 					},
 				},
@@ -53,10 +53,10 @@ func TestCompileRegex(t *testing.T) {
 
 	t.Run("returns error for invalid regex", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "test",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "[invalid(regex", Regex: nil},
 					},
 				},
@@ -71,17 +71,17 @@ func TestCompileRegex(t *testing.T) {
 
 	t.Run("compiles multiple rules and checks", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "rule1",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "error.*", Regex: nil},
 						{RegexText: "failed", Regex: nil},
 					},
 				},
 				{
 					Name: "rule2",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "warning", Regex: nil},
 					},
 				},
@@ -106,7 +106,7 @@ func TestLogParserConfig_Output(t *testing.T) {
 	t.Run("preserves custom output format", func(t *testing.T) {
 		cfg := &Config{
 			Pfp: &LogParserConfig{
-				Rules:      []*pfp.Rule{},
+				Rules:      []*logparser.Rule{},
 				Output:     "json",
 				MaxMatches: 10,
 			},
@@ -138,10 +138,10 @@ func TestLogParserConfig_MaxMatches(t *testing.T) {
 func TestCompileRegex_EdgeCases(t *testing.T) {
 	t.Run("skips compilation for empty regex text", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "mixed",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "valid", Regex: nil},
 						{RegexText: "", Regex: nil},
 						{RegexText: "also.*valid", Regex: nil},
@@ -168,10 +168,10 @@ func TestCompileRegex_EdgeCases(t *testing.T) {
 
 	t.Run("handles complex regex patterns", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "complex",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: `^(?P<level>ERROR|WARN|INFO):\s+(?P<msg>.+)$`, Regex: nil},
 						{RegexText: `\b(?:\d{1,3}\.){3}\d{1,3}\b`, Regex: nil},
 						{RegexText: `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`, Regex: nil},
@@ -196,10 +196,10 @@ func TestCompileRegex_EdgeCases(t *testing.T) {
 func TestLogParserConfig_RuleStructure(t *testing.T) {
 	t.Run("handles rules with single check", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "single",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "error", Regex: nil},
 					},
 				},
@@ -217,13 +217,13 @@ func TestLogParserConfig_RuleStructure(t *testing.T) {
 	})
 
 	t.Run("handles rules with many checks", func(t *testing.T) {
-		checks := make([]pfp.LineMatcher, 10)
+		checks := make([]logparser.LineMatcher, 10)
 		for i := range 10 {
-			checks[i] = pfp.LineMatcher{RegexText: "pattern", Regex: nil}
+			checks[i] = logparser.LineMatcher{RegexText: "pattern", Regex: nil}
 		}
 
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name:   "many",
 					Checks: checks,
@@ -249,10 +249,10 @@ func TestLogParserConfig_RuleStructure(t *testing.T) {
 
 	t.Run("handles mixed empty and non-empty regex patterns", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "mixed",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "", Regex: nil},
 						{RegexText: "pattern", Regex: nil},
 						{RegexText: "", Regex: nil},
@@ -285,10 +285,10 @@ func TestLogParserConfig_RuleStructure(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Run("returns nil for valid config with rules and checks", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "error-rule",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "ERROR", Regex: nil},
 						{RegexText: "FATAL", Regex: nil},
 					},
@@ -296,7 +296,7 @@ func TestValidate(t *testing.T) {
 				},
 				{
 					Name: "warning-rule",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "WARN", Regex: nil},
 					},
 				},
@@ -319,10 +319,10 @@ func TestValidate(t *testing.T) {
 
 	t.Run("returns error for rule with 0 checks", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name:   "empty-rule",
-					Checks: []pfp.LineMatcher{},
+					Checks: []logparser.LineMatcher{},
 				},
 			},
 		}
@@ -335,10 +335,10 @@ func TestValidate(t *testing.T) {
 
 	t.Run("returns error for invalid regex in rules", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "invalid-rule",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "[unclosed", Regex: nil},
 					},
 				},
@@ -353,16 +353,16 @@ func TestValidate(t *testing.T) {
 
 	t.Run("returns error when multiple rules and one has empty checks", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name: "valid-rule",
-					Checks: []pfp.LineMatcher{
+					Checks: []logparser.LineMatcher{
 						{RegexText: "ERROR", Regex: nil},
 					},
 				},
 				{
 					Name:   "empty-rule",
-					Checks: []pfp.LineMatcher{},
+					Checks: []logparser.LineMatcher{},
 				},
 			},
 		}
@@ -375,10 +375,10 @@ func TestValidate(t *testing.T) {
 
 	t.Run("returns error for rule with checks but no maxlines set", func(t *testing.T) {
 		lpc := &LogParserConfig{
-			Rules: []*pfp.Rule{
+			Rules: []*logparser.Rule{
 				{
 					Name:   "testing rule",
-					Checks: []pfp.LineMatcher{{}, {}}, // Just some empty checks to trigger the error
+					Checks: []logparser.LineMatcher{{}, {}}, // Just some empty checks to trigger the error
 				},
 			},
 		}

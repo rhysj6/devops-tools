@@ -7,15 +7,16 @@ import (
 	"strconv"
 
 	"github.com/rhysj6/devops-tools/internal/jenkins"
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
-var _ RecursiveLogSource = (*JenkinsLogSource)(nil)
+var _ logparser.RecursiveLogSource = (*JenkinsLogSource)(nil)
 
 type JenkinsLogSource struct {
 	client                    jenkins.Client
 	jobName                   string
 	buildNumber               int
-	downstreamFailedBuildRule *Rule
+	downstreamFailedBuildRule *logparser.Rule
 }
 
 func NewJenkinsLogSource(client jenkins.Client, cmdArgs []string) (*JenkinsLogSource, error) {
@@ -49,11 +50,11 @@ func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 	return j.client.GetBuildLogs(j.jobName, j.buildNumber)
 }
 
-func (j *JenkinsLogSource) GetDownstreamErrorRule() *Rule {
+func (j *JenkinsLogSource) GetDownstreamErrorRule() *logparser.Rule {
 	if j.downstreamFailedBuildRule == nil {
-		j.downstreamFailedBuildRule = &Rule{
+		j.downstreamFailedBuildRule = &logparser.Rule{
 			Name: "Downstream Failed Jenkins Build",
-			Checks: []LineMatcher{
+			Checks: []logparser.LineMatcher{
 				{Contains: "completed: FAILURE", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\d+)(?::\s*(?P<suffix>.*?))?\s+completed:\s+FAILURE\s*$`)},
 			},
 			Solution: "If there are no other matches, then look at the logs of the downstream failed build for more information on why the build failed.",
@@ -62,7 +63,7 @@ func (j *JenkinsLogSource) GetDownstreamErrorRule() *Rule {
 	return j.downstreamFailedBuildRule
 }
 
-func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *ParseMatch) (string, int, error) {
+func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *logparser.ParseMatch) (string, int, error) {
 	regex := match.Rule.Checks[0].Regex
 	if regex == nil {
 		return "", 0, fmt.Errorf("regex is nil for downstream failed build rule")
@@ -85,7 +86,7 @@ func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *ParseMatch) 
 	return jobName, buildNumber, nil
 }
 
-func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *ParseMatch) (io.ReadCloser, error) {
+func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *logparser.ParseMatch) (io.ReadCloser, error) {
 	if match.Rule != j.GetDownstreamErrorRule() {
 		return nil, fmt.Errorf("match rule does not match downstream failed build rule")
 	}
