@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rhysj6/devops-tools/internal/jenkins"
+	"github.com/rhysj6/devops-tools/pkg/logparser/jenkinssource"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Pfp     *LogParserConfig      `mapstructure:"pfp"`
-	Jenkins jenkins.JenkinsClient `mapstructure:"jenkins"`
+	Pfp     *LogParserConfig            `mapstructure:"pfp"`
+	Jenkins jenkinssource.JenkinsClient `mapstructure:"jenkins"`
 }
 
 func LoadConfig(cmd *cobra.Command) (*Config, error) {
