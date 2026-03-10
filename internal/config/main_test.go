@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 func TestSetupConfig(t *testing.T) {
 	t.Run("sets default output to text", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules:      []*logparser.Rule{},
 				Output:     "",
 				MaxMatches: 1,
@@ -107,14 +107,14 @@ func TestSetupConfig(t *testing.T) {
 			t.Fatalf("SetupConfig returned error: %v", err)
 		}
 
-		if cfg.Pfp.Output != "text" {
-			t.Fatalf("Output = %q, want %q", cfg.Pfp.Output, "text")
+		if cfg.LogParser.Output != "text" {
+			t.Fatalf("Output = %q, want %q", cfg.LogParser.Output, "text")
 		}
 	})
 
 	t.Run("sets default MaxMatches to 1", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules:      []*logparser.Rule{},
 				Output:     "text",
 				MaxMatches: 0,
@@ -126,14 +126,14 @@ func TestSetupConfig(t *testing.T) {
 			t.Fatalf("SetupConfig returned error: %v", err)
 		}
 
-		if cfg.Pfp.MaxMatches != 1 {
-			t.Fatalf("MaxMatches = %d, want 1", cfg.Pfp.MaxMatches)
+		if cfg.LogParser.MaxMatches != 1 {
+			t.Fatalf("MaxMatches = %d, want 1", cfg.LogParser.MaxMatches)
 		}
 	})
 
 	t.Run("preserves non-default values", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules:      []*logparser.Rule{},
 				Output:     "json",
 				MaxMatches: 5,
@@ -145,17 +145,17 @@ func TestSetupConfig(t *testing.T) {
 			t.Fatalf("SetupConfig returned error: %v", err)
 		}
 
-		if cfg.Pfp.Output != "json" {
-			t.Fatalf("Output = %q, want %q", cfg.Pfp.Output, "json")
+		if cfg.LogParser.Output != "json" {
+			t.Fatalf("Output = %q, want %q", cfg.LogParser.Output, "json")
 		}
-		if cfg.Pfp.MaxMatches != 5 {
-			t.Fatalf("MaxMatches = %d, want 5", cfg.Pfp.MaxMatches)
+		if cfg.LogParser.MaxMatches != 5 {
+			t.Fatalf("MaxMatches = %d, want 5", cfg.LogParser.MaxMatches)
 		}
 	})
 
-	t.Run("handles nil Pfp gracefully", func(t *testing.T) {
+	t.Run("handles nil LogParser gracefully", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: nil,
+			LogParser: nil,
 		}
 
 		err := cfg.SetupConfig()
@@ -168,7 +168,7 @@ func TestSetupConfig(t *testing.T) {
 func TestSetupConfig_Integration(t *testing.T) {
 	t.Run("setup with complex rules and regex", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules: []*logparser.Rule{
 					{
 						Name: "errors",
@@ -194,20 +194,20 @@ func TestSetupConfig_Integration(t *testing.T) {
 			t.Fatalf("SetupConfig returned error: %v", err)
 		}
 
-		if cfg.Pfp.Output != "json" {
+		if cfg.LogParser.Output != "json" {
 			t.Fatalf("Output not preserved")
 		}
-		if cfg.Pfp.MaxMatches != 50 {
+		if cfg.LogParser.MaxMatches != 50 {
 			t.Fatalf("MaxMatches not preserved")
 		}
-		if cfg.Pfp.Rules[0].Checks[0].Regex == nil {
+		if cfg.LogParser.Rules[0].Checks[0].Regex == nil {
 			t.Fatal("Regex should be compiled")
 		}
 	})
 
 	t.Run("setup returns error on invalid regex", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules: []*logparser.Rule{
 					{
 						Name: "bad",

@@ -28,7 +28,7 @@ func addPfpCommands(rootCmd *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			return cfg.Pfp.Validate()
+			return cfg.LogParser.Validate()
 		},
 		SilenceUsage: true,
 	}
@@ -62,8 +62,8 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Pfp == nil {
-		return fmt.Errorf("pfp config is not set")
+	if cfg.LogParser == nil {
+		return fmt.Errorf("logparser config is not set")
 	}
 
 	var logSource logparser.LogSource
@@ -83,7 +83,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	matches, stats, err := logparser.ParseFromSource(logSource, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	matches, stats, err := logparser.ParseFromSource(logSource, cfg.LogParser.Rules, cfg.LogParser.MaxMatches)
 	logparser.TextOutput(os.Stdout, matches, stats)
 	return err
 }
