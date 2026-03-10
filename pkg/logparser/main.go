@@ -103,7 +103,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 			lineNo-- // Don't count the EOF as a line
 			break
 		} else if err == bufio.ErrBufferFull {
-			logger.Warn("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
+			logger.Debug("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
