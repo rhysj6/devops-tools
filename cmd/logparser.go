@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/rhysj6/devops-tools/internal/config"
@@ -67,6 +68,10 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("logparser config is not set")
 	}
 
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
 	var logSource logparser.LogSource
 
 	switch source {
@@ -84,7 +89,15 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	matches, stats, err := logparser.ParseFromSource(logSource, cfg.LogParser.Rules, cfg.LogParser.MaxMatches)
-	logparser.TextOutput(os.Stdout, matches, stats)
+	matches, stats, err := logparser.ParseFromSource(logSource, cfg.LogParser.Rules, cfg.LogParser.MaxMatches, logger)
+
+	logger.Info("stats",
+		slog.Any("lines_parsed", stats.LinesParsed),
+		slog.Any("duration", stats.Duration),
+		slog.Any("partial_matches", stats.PartialMatches),
+		slog.Any("complete_matches", stats.CompleteMatches),
+	)
+
+	logparser.TextOutput(os.Stdout, matches)
 	return err
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestTextOutput(t *testing.T) {
@@ -22,39 +21,21 @@ func TestTextOutput(t *testing.T) {
 	tests := []struct {
 		name     string
 		matches  []*ParseMatch
-		stats    Stats
 		expected []string
 	}{
 		{
 			name:     "No matches",
 			matches:  []*ParseMatch{},
-			stats:    Stats{},
 			expected: []string{"No matches found"},
 		},
 		{
 			name:    "Matches contain expected fields",
 			matches: []*ParseMatch{exampleParseMatch},
-			stats:   Stats{},
 			expected: []string{
 				"Matches:",
 				"Matched rule: Test rule",
 				"Solution: \nTest solution",
 				"1: Test log",
-			},
-		},
-		{
-			name:    "Stats display correctly",
-			matches: []*ParseMatch{},
-			stats: Stats{
-				LinesParsed:     1234,
-				Duration:        time.Second,
-				PartialMatches:  123,
-				CompleteMatches: 12,
-			},
-			expected: []string{
-				"Duration:             1s",
-				"Partial Matches:      123",
-				"Complete Matches:     12",
 			},
 		},
 		{
@@ -71,16 +52,9 @@ func TestTextOutput(t *testing.T) {
 					},
 				},
 			},
-			stats: Stats{
-				LinesParsed:     1234,
-				Duration:        time.Second,
-				PartialMatches:  123,
-				CompleteMatches: 12,
-			},
 			expected: []string{
-				"Duration:             1s",
-				"Partial Matches:      123",
-				"Complete Matches:     12",
+				"Matches:",
+				"Matched rule: Test rule",
 				"Category: Test category",
 			},
 		},
@@ -90,7 +64,7 @@ func TestTextOutput(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
 
-			TextOutput(&buf, tt.matches, tt.stats)
+			TextOutput(&buf, tt.matches)
 			res := buf.String()
 			for _, e := range tt.expected {
 				if !strings.Contains(res, e) {

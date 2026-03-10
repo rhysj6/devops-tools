@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -17,7 +18,7 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
-func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
+func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
 	if err != nil {
@@ -28,7 +29,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	if ok {
 		rules = append(rules, recursiveSource.GetDownstreamErrorRule())
 	}
-	matches, stats, err := Parse(logs, rules, maxMatches)
+	matches, stats, err := Parse(logs, rules, maxMatches, logger)
 
 	if !ok {
 		stats.Duration = time.Since(startTime)
@@ -41,11 +42,12 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
 		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
+			logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
 			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to get downstream error logs: %w", err)
 			}
-			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches)
+			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches, logger)
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
@@ -76,10 +78,13 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int) ([]*ParseM
 	return matches, stats, nil
 }
 
-func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats, error) {
+func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() { _ = r.Close() }()
 	defer cancel()
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 	stats := Stats{}
 	reader := bufio.NewReader(r)
 
@@ -98,7 +103,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int) ([]*ParseMatch, Stats
 			lineNo-- // Don't count the EOF as a line
 			break
 		} else if err == bufio.ErrBufferFull {
-			fmt.Printf("Warning: skipping line %d as it's more than 4kb\n", lineNo)
+			logger.Warn("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
