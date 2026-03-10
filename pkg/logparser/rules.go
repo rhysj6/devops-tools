@@ -15,7 +15,8 @@ type Rule struct {
 	Name     string
 	Checks   []LineMatcher `mapstructure:"patterns"`
 	MaxLines int           `mapstructure:"maxlines"`
-	Solution string
+	Solution string        `mapstructure:"solution"`
+	Category string        `mapstructure:"category"`
 }
 
 func (r Rule) getNeededLineCount() int {
