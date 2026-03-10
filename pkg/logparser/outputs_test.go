@@ -57,6 +57,33 @@ func TestTextOutput(t *testing.T) {
 				"Complete Matches:     12",
 			},
 		},
+		{
+			name: "Category is displayed when set",
+			matches: []*ParseMatch{
+				{
+					Rule: &Rule{
+						Name:     "Test rule",
+						Category: "Test category",
+						Solution: "Test solution",
+					},
+					MatchedLines: []*LogLine{
+						{LineNumber: 1, Content: "Test log"},
+					},
+				},
+			},
+			stats: Stats{
+				LinesParsed:     1234,
+				Duration:        time.Second,
+				PartialMatches:  123,
+				CompleteMatches: 12,
+			},
+			expected: []string{
+				"Duration:             1s",
+				"Partial Matches:      123",
+				"Complete Matches:     12",
+				"Category: Test category",
+			},
+		},
 	}
 
 	for _, tt := range tests {
