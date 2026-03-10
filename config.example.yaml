@@ -1,4 +1,4 @@
-pfp:
+logparser:
   rules:
     - name: "Missing infisical environment variable"
       patterns:

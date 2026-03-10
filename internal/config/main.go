@@ -12,8 +12,8 @@ import (
 )
 
 type Config struct {
-	Pfp     *LogParserConfig            `mapstructure:"pfp"`
-	Jenkins jenkinssource.JenkinsClient `mapstructure:"jenkins"`
+	LogParser *LogParserConfig            `mapstructure:"logparser"`
+	Jenkins   jenkinssource.JenkinsClient `mapstructure:"jenkins"`
 }
 
 func LoadConfig(cmd *cobra.Command) (*Config, error) {
@@ -41,8 +41,8 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 		}
 	}
 
-	_ = v.BindPFlag("pfp.maxmatches", cmd.Flags().Lookup("max-matches"))
-	_ = v.BindPFlag("pfp.output", cmd.Flags().Lookup("output"))
+	_ = v.BindPFlag("logparser.maxmatches", cmd.Flags().Lookup("max-matches"))
+	_ = v.BindPFlag("logparser.output", cmd.Flags().Lookup("output"))
 	_ = v.BindEnv("jenkins.url", "DEVOPS_TOOLS_JENKINS_URL", "HUDSON_URL")
 	_ = v.BindEnv("jenkins.username")
 	_ = v.BindEnv("jenkins.password")

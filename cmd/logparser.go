@@ -11,14 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addPfpCommands(rootCmd *cobra.Command) {
-	pfpCmd := &cobra.Command{
-		Use:   "pfp",
-		Short: "Pipeline failure parser",
-		Long:  `Reads in the log and parses it against a set of rules in the config, will return the first matching true`,
+func addLogParserCommands(rootCmd *cobra.Command) {
+	logParserCmd := &cobra.Command{
+		Use:     "logparser",
+		Aliases: []string{"lp"},
+		Short:   "Pipeline failure parser",
+		Long:    `Reads in the log and parses it against a set of rules in the config, will return the first matching true`,
 	}
 
-	pfpCmd.Flags().StringP("output", "o", "text", "output format (json|text)")
+	logParserCmd.Flags().StringP("output", "o", "text", "output format (json|text)")
 
 	validateCmd := &cobra.Command{
 		Use:   "validate",
@@ -28,42 +29,42 @@ func addPfpCommands(rootCmd *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			return cfg.Pfp.Validate()
+			return cfg.LogParser.Validate()
 		},
 		SilenceUsage: true,
 	}
-	pfpCmd.AddCommand(validateCmd)
+	logParserCmd.AddCommand(validateCmd)
 
 	fileParseCmd := &cobra.Command{
 		Use:   "file [path]",
 		Short: "Read in a file for failure parsing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPfp(cmd, "file", args)
+			return runLogParser(cmd, "file", args)
 		},
 	}
-	pfpCmd.AddCommand(fileParseCmd)
+	logParserCmd.AddCommand(fileParseCmd)
 
 	jenkinsParseCmd := &cobra.Command{
 		Use:   "jenkins [url|job_name] [build_no]",
 		Short: "Reads logs from Jenkins for failure parsing",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPfp(cmd, "jenkins", args)
+			return runLogParser(cmd, "jenkins", args)
 		},
 	}
-	pfpCmd.AddCommand(jenkinsParseCmd)
+	logParserCmd.AddCommand(jenkinsParseCmd)
 
-	rootCmd.AddCommand(pfpCmd)
+	rootCmd.AddCommand(logParserCmd)
 }
 
-func runPfp(cmd *cobra.Command, source string, args []string) error {
+func runLogParser(cmd *cobra.Command, source string, args []string) error {
 	cfg, err := config.LoadConfig(cmd)
 	if err != nil {
 		return err
 	}
-	if cfg.Pfp == nil {
-		return fmt.Errorf("pfp config is not set")
+	if cfg.LogParser == nil {
+		return fmt.Errorf("logparser config is not set")
 	}
 
 	var logSource logparser.LogSource
@@ -83,7 +84,7 @@ func runPfp(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	matches, stats, err := logparser.ParseFromSource(logSource, cfg.Pfp.Rules, cfg.Pfp.MaxMatches)
+	matches, stats, err := logparser.ParseFromSource(logSource, cfg.LogParser.Rules, cfg.LogParser.MaxMatches)
 	logparser.TextOutput(os.Stdout, matches, stats)
 	return err
 }

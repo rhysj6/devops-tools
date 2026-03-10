@@ -8,18 +8,18 @@ import (
 )
 
 func (c *Config) SetupConfig() error {
-	if c.Pfp != nil {
-		err := c.Pfp.CompileRegex()
+	if c.LogParser != nil {
+		err := c.LogParser.CompileRegex()
 		if err != nil {
 			return err
 		}
 
-		if c.Pfp.Output == "" {
-			c.Pfp.Output = "text"
+		if c.LogParser.Output == "" {
+			c.LogParser.Output = "text"
 		}
 
-		if c.Pfp.MaxMatches == 0 {
-			c.Pfp.MaxMatches = 1
+		if c.LogParser.MaxMatches == 0 {
+			c.LogParser.MaxMatches = 1
 		}
 	}
 

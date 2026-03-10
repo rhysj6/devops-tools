@@ -14,7 +14,7 @@ func GetCommand() *cobra.Command {
 	rootCmd.PersistentFlags().StringP("config", "c", "", "Path to config file")
 	_ = rootCmd.MarkFlagFilename("config", "yaml")
 
-	addPfpCommands(rootCmd)
+	addLogParserCommands(rootCmd)
 
 	return rootCmd
 }

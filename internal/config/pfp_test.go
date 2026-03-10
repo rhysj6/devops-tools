@@ -105,7 +105,7 @@ func TestCompileRegex(t *testing.T) {
 func TestLogParserConfig_Output(t *testing.T) {
 	t.Run("preserves custom output format", func(t *testing.T) {
 		cfg := &Config{
-			Pfp: &LogParserConfig{
+			LogParser: &LogParserConfig{
 				Rules:      []*logparser.Rule{},
 				Output:     "json",
 				MaxMatches: 10,
@@ -117,8 +117,8 @@ func TestLogParserConfig_Output(t *testing.T) {
 			t.Fatalf("SetupConfig returned error: %v", err)
 		}
 
-		if cfg.Pfp.Output != "json" {
-			t.Fatalf("Output = %q, want %q", cfg.Pfp.Output, "json")
+		if cfg.LogParser.Output != "json" {
+			t.Fatalf("Output = %q, want %q", cfg.LogParser.Output, "json")
 		}
 	})
 }
