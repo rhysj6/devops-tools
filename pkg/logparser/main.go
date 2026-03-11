@@ -57,10 +57,14 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
-			matches = append(matches, downstreamMatches...)
 			stats.PartialMatches += downstreamStats.PartialMatches
 			stats.CompleteMatches += downstreamStats.CompleteMatches
 			stats.LinesParsed += downstreamStats.LinesParsed
+			if len(downstreamMatches) == 0 {
+				logger.Info("no further matches found in downstream logs")
+				break
+			}
+			matches = append(matches, downstreamMatches...)
 		} else {
 			break
 		}
