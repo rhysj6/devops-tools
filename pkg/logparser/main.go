@@ -24,6 +24,9 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
+	if logger == nil {
+		logger = slog.New(slog.DiscardHandler)
+	}
 	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
 	if ok {
@@ -83,7 +86,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 	defer func() { _ = r.Close() }()
 	defer cancel()
 	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		logger = slog.New(slog.DiscardHandler)
 	}
 	stats := Stats{}
 	reader := bufio.NewReader(r)
