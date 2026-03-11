@@ -10,6 +10,7 @@ import (
 
 var _ logparser.LogSource = (*FileLogSource)(nil)
 
+// FileLogSource loads logs from a local file path.
 type FileLogSource struct {
 	FilePath string
 }

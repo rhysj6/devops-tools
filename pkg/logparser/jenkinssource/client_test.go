@@ -1,7 +1,6 @@
 package jenkinssource
 
 import (
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -222,8 +221,11 @@ func TestGetBuildLogs(t *testing.T) {
 		}
 
 		_, err := client.GetBuildLogs("my-job", 123)
-		if !errors.Is(err, ErrUnauthorized) {
-			t.Fatalf("GetBuildLogs error = %v, want ErrUnauthorized", err)
+		if err == nil {
+			t.Fatal("Expected unauthorized error got nil")
+		}
+		if err.Error() != "failed to fetch build logs: status 401" {
+			t.Fatalf("GetBuildLogs error = %v, want failed to fetch build logs: status 401", err)
 		}
 	})
 

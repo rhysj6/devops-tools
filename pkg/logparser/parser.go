@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// ParseMatch represents a successful rule match and the lines that matched.
 type ParseMatch struct {
 	Rule         *Rule
 	MatchedLines []*LogLine
@@ -18,6 +19,7 @@ type matcher struct {
 	DoneChannel     chan struct{} // Used to signal that matcher finished
 }
 
+// LogLine is a single parsed line and its 1-based position in the source.
 type LogLine struct {
 	Content    string
 	LineNumber int

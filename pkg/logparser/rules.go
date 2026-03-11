@@ -5,12 +5,14 @@ import (
 	"strings"
 )
 
+// LineMatcher defines a single line condition using contains and/or regex.
 type LineMatcher struct {
 	Contains  string
 	RegexText string         `mapstructure:"regex"`
 	Regex     *regexp.Regexp `mapstructure:"-"`
 }
 
+// Rule defines an ordered set of checks and metadata for a log match.
 type Rule struct {
 	Name     string
 	Checks   []LineMatcher `mapstructure:"patterns"`
