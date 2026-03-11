@@ -86,7 +86,7 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		if cfg.Jenkins.URL == "" {
 			return fmt.Errorf("the Jenkins URL is not set")
 		}
-		logSource, err = jenkinssource.NewJenkinsLogSource(cfg.Jenkins, args)
+		logSource, err = jenkinssource.NewJenkinsLogSource(cfg.Jenkins, args, ctx)
 		if err != nil {
 			return err
 		}

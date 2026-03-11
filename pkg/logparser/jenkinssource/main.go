@@ -1,6 +1,7 @@
 package jenkinssource
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"regexp"
@@ -17,16 +18,18 @@ type JenkinsLogSource struct {
 	jobName                   string
 	buildNumber               int
 	downstreamFailedBuildRule *logparser.Rule
+	ctx                       context.Context
 }
 
 // NewJenkinsLogSource builds a JenkinsLogSource from CLI-style arguments for the build url or job name and build number.
-func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, error) {
+func NewJenkinsLogSource(client Client, cmdArgs []string, ctx context.Context) (*JenkinsLogSource, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
 	}
 
 	j := &JenkinsLogSource{
 		client: client,
+		ctx:    ctx,
 	}
 
 	if len(cmdArgs) == 1 {
@@ -52,7 +55,7 @@ func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, er
 
 // GetLogs returns console text for the configured Jenkins job/build.
 func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
-	return j.client.GetBuildLogs(j.jobName, j.buildNumber)
+	return j.client.GetBuildLogs(j.ctx, j.jobName, j.buildNumber)
 }
 
 // GetDownstreamErrorRule returns the rule used to detect downstream failures.
@@ -104,7 +107,7 @@ func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *logparser.ParseMatch) (
 	if err != nil {
 		return nil, err
 	}
-	return j.client.GetBuildLogs(jobName, buildNumber)
+	return j.client.GetBuildLogs(j.ctx, jobName, buildNumber)
 }
 
 // GetMaxRecursionDepth returns the maximum downstream parsing depth.

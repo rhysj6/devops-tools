@@ -14,8 +14,7 @@ import (
 type Client interface {
 	IsJobURL(string) bool
 	GetJobNameAndNumberFromURL(string) (string, int, error)
-	GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error)
-	GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error)
+	GetBuildLogs(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error)
 }
 
 var _ Client = (*JenkinsClient)(nil)
@@ -77,13 +76,8 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 	return name, buildNumber, nil
 }
 
-// GetBuildLogs fetches console text for a Jenkins job build.
-func (j JenkinsClient) GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error) {
-	return j.GetBuildLogsWithContext(context.Background(), jobName, buildNumber)
-}
-
-// GetBuildLogsWithContext fetches console text for a Jenkins job build with context.
-func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
+// GetBuildLogsWithContext fetches console text for a Jenkins job build.
+func (j JenkinsClient) GetBuildLogs(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
 	if strings.TrimSpace(jobName) == "" {
 		return nil, fmt.Errorf("job name is required")
 	}
