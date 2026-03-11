@@ -14,7 +14,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		rules := []*Rule{}
-		matches, stats, err := ParseFromSource(mockSource, rules, 10)
+		matches, stats, err := ParseFromSource(mockSource, rules, 10, nil)
 
 		if err != nil {
 			t.Fatalf("ParseFromSource returned error: %v", err)
@@ -40,7 +40,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		rules := []*Rule{}
-		_, _, err := ParseFromSource(mockSource, rules, 10)
+		_, _, err := ParseFromSource(mockSource, rules, 10, nil)
 
 		if err == nil {
 			t.Fatal("Expected error, got nil")
@@ -73,7 +73,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		rules := []*Rule{finalLogRule}
-		matches, stats, err := ParseFromSource(mockSource, rules, 10)
+		matches, stats, err := ParseFromSource(mockSource, rules, 10, nil)
 
 		if err != nil {
 			t.Fatalf("ParseFromSource returned error: %v", err)
@@ -114,7 +114,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		rules := []*Rule{finalLogRule}
-		matches, stats, err := ParseFromSource(mockSource, rules, 10)
+		matches, stats, err := ParseFromSource(mockSource, rules, 10, nil)
 
 		if err != nil {
 			t.Fatalf("ParseFromSource returned error: %v", err)
@@ -139,7 +139,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		rules := []*Rule{}
-		_, _, err := ParseFromSource(mockSource, rules, 10)
+		_, _, err := ParseFromSource(mockSource, rules, 10, nil)
 
 		if err != nil {
 			t.Fatalf("ParseFromSource returned error: %v", err)
@@ -198,7 +198,7 @@ func TestParse(t *testing.T) {
 	t.Run("calculates stats correctly", func(t *testing.T) {
 		input := "line1\nline2\nline3\n"
 		reader := io.NopCloser(strings.NewReader(input))
-		_, stats, err := Parse(reader, []*Rule{}, 10)
+		_, stats, err := Parse(reader, []*Rule{}, 10, nil)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}
@@ -212,7 +212,7 @@ func TestParse(t *testing.T) {
 		input := "line1\nline2\n"
 		reader := io.NopCloser(strings.NewReader(input))
 
-		matches, _, err := Parse(reader, []*Rule{}, 10)
+		matches, _, err := Parse(reader, []*Rule{}, 10, nil)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}
@@ -226,7 +226,7 @@ func TestParse(t *testing.T) {
 		input := "single line"
 		reader := io.NopCloser(strings.NewReader(input))
 
-		_, stats, err := Parse(reader, []*Rule{}, 10)
+		_, stats, err := Parse(reader, []*Rule{}, 10, nil)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}
@@ -239,7 +239,7 @@ func TestParse(t *testing.T) {
 	t.Run("handles empty reader", func(t *testing.T) {
 		reader := io.NopCloser(strings.NewReader(""))
 
-		matches, stats, err := Parse(reader, []*Rule{}, 10)
+		matches, stats, err := Parse(reader, []*Rule{}, 10, nil)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}
@@ -260,7 +260,7 @@ func TestParse(t *testing.T) {
 
 		reader := io.NopCloser(strings.NewReader(sb.String()))
 
-		_, stats, err := Parse(reader, []*Rule{}, 10)
+		_, stats, err := Parse(reader, []*Rule{}, 10, nil)
 		if err != nil {
 			t.Fatalf("Parse returned error: %v", err)
 		}

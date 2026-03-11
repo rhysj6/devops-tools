@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 )
 
 type Config struct {
+	LogLevel  string                      `mapstructure:"log_level"`
 	LogParser *LogParserConfig            `mapstructure:"logparser"`
 	Jenkins   jenkinssource.JenkinsClient `mapstructure:"jenkins"`
 }
@@ -60,4 +62,17 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func ParseSlogLevel(level string) slog.Level {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

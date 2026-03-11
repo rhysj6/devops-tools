@@ -133,6 +133,7 @@ func TestSetupConfig(t *testing.T) {
 
 	t.Run("preserves non-default values", func(t *testing.T) {
 		cfg := &Config{
+			LogLevel: "debug",
 			LogParser: &LogParserConfig{
 				Rules:      []*logparser.Rule{},
 				Output:     "json",
@@ -150,6 +151,9 @@ func TestSetupConfig(t *testing.T) {
 		}
 		if cfg.LogParser.MaxMatches != 5 {
 			t.Fatalf("MaxMatches = %d, want 5", cfg.LogParser.MaxMatches)
+		}
+		if cfg.LogLevel != "debug" {
+			t.Fatalf("LogLevel = %q, want %q", cfg.LogLevel, "debug")
 		}
 	})
 

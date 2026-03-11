@@ -5,13 +5,7 @@ import (
 	"io"
 )
 
-func TextOutput(w io.Writer, matches []*ParseMatch, stats Stats) {
-	_, _ = fmt.Fprintln(w, "Stats:")
-	_, _ = fmt.Fprintf(w, "Lines parsed:         %v \n", stats.LinesParsed)
-	_, _ = fmt.Fprintf(w, "Duration:             %v \n", stats.Duration)
-	_, _ = fmt.Fprintf(w, "Partial Matches:      %v \n", stats.PartialMatches)
-	_, _ = fmt.Fprintf(w, "Complete Matches:     %v \n", stats.CompleteMatches)
-
+func TextOutput(w io.Writer, matches []*ParseMatch) {
 	if len(matches) == 0 {
 		_, _ = fmt.Fprintln(w, "No matches found")
 		return
