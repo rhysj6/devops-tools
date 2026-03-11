@@ -12,6 +12,7 @@ import (
 )
 
 type Config struct {
+	LogLevel  string                      `mapstructure:"log_level"`
 	LogParser *LogParserConfig            `mapstructure:"logparser"`
 	Jenkins   jenkinssource.JenkinsClient `mapstructure:"jenkins"`
 }

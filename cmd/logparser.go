@@ -69,7 +69,7 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: config.ParseSlogLevel(cfg.LogLevel),
 	}))
 
 	var logSource logparser.LogSource
