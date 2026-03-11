@@ -147,7 +147,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
 
-		reader, err := client.GetBuildLogs("my-job", 123)
+		reader, err := client.GetBuildLogs(t.Context(), "my-job", 123)
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
@@ -177,7 +177,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
 
-		reader, err := client.GetBuildLogs("old ansible/linux/my-job", 123)
+		reader, err := client.GetBuildLogs(t.Context(), "old ansible/linux/my-job", 123)
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
@@ -197,7 +197,7 @@ func TestGetBuildLogs(t *testing.T) {
 
 		client := JenkinsClient{URL: server.URL, Username: "u", Password: "p"}
 
-		_, err := client.GetBuildLogs("my-job", 123)
+		_, err := client.GetBuildLogs(t.Context(), "my-job", 123)
 		if err != nil {
 			t.Fatalf("GetBuildLogs returned error: %v", err)
 		}
@@ -220,7 +220,7 @@ func TestGetBuildLogs(t *testing.T) {
 			Password: "wrong-pass",
 		}
 
-		_, err := client.GetBuildLogs("my-job", 123)
+		_, err := client.GetBuildLogs(t.Context(), "my-job", 123)
 		if err == nil {
 			t.Fatal("Expected unauthorized error got nil")
 		}
@@ -236,12 +236,12 @@ func TestGetBuildLogs(t *testing.T) {
 			Password: "pass",
 		}
 
-		_, err := client.GetBuildLogs("", 123)
+		_, err := client.GetBuildLogs(t.Context(), "", 123)
 		if err == nil {
 			t.Fatal("GetBuildLogs should return error for empty job name")
 		}
 
-		_, err = client.GetBuildLogs("my-job", 0)
+		_, err = client.GetBuildLogs(t.Context(), "my-job", 0)
 		if err == nil {
 			t.Fatal("GetBuildLogs should return error for invalid build number")
 		}
@@ -259,7 +259,7 @@ func TestGetBuildLogs(t *testing.T) {
 			Password: "wrong-pass",
 		}
 
-		_, err := client.GetBuildLogs("my-job", 123)
+		_, err := client.GetBuildLogs(t.Context(), "my-job", 123)
 		if err == nil {
 			t.Fatal("Expected error got nil")
 		}

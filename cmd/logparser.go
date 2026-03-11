@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/rhysj6/devops-tools/internal/config"
 	"github.com/rhysj6/devops-tools/pkg/logparser"
@@ -60,6 +62,9 @@ func addLogParserCommands(rootCmd *cobra.Command) {
 }
 
 func runLogParser(cmd *cobra.Command, source string, args []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
 	cfg, err := config.LoadConfig(cmd)
 	if err != nil {
 		return err
@@ -81,7 +86,7 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		if cfg.Jenkins.URL == "" {
 			return fmt.Errorf("the Jenkins URL is not set")
 		}
-		logSource, err = jenkinssource.NewJenkinsLogSource(cfg.Jenkins, args)
+		logSource, err = jenkinssource.NewJenkinsLogSource(cfg.Jenkins, args, ctx)
 		if err != nil {
 			return err
 		}
@@ -89,7 +94,14 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		return fmt.Errorf("unsupported source: %s", source)
 	}
 
-	matches, stats, err := logparser.ParseFromSource(logSource, cfg.LogParser.Rules, cfg.LogParser.MaxMatches, logger)
+	parser := logparser.NewLogParser(
+		logparser.WithRules(cfg.LogParser.Rules),
+		logparser.WithMaxMatches(cfg.LogParser.MaxMatches),
+		logparser.WithLogger(logger),
+		logparser.WithContext(ctx),
+	)
+
+	matches, stats, err := parser.ParseFromSource(logSource)
 
 	logger.Info("stats",
 		slog.Any("lines_parsed", stats.LinesParsed),

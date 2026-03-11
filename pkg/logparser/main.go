@@ -19,23 +19,74 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
+type LogParser struct {
+	Rules      []*Rule
+	MaxMatches int
+	logger     *slog.Logger
+	ctx        context.Context
+}
+
+type ParserOption func(*LogParser)
+
+func WithRules(rules []*Rule) ParserOption {
+	return func(lp *LogParser) {
+		lp.Rules = rules
+	}
+}
+
+func WithMaxMatches(max int) ParserOption {
+	return func(lp *LogParser) {
+		lp.MaxMatches = max
+	}
+}
+
+func WithLogger(logger *slog.Logger) ParserOption {
+	return func(lp *LogParser) {
+		lp.logger = logger
+	}
+}
+
+func WithContext(ctx context.Context) ParserOption {
+	return func(lp *LogParser) {
+		lp.ctx = ctx
+	}
+}
+
+func NewLogParser(opts ...ParserOption) *LogParser {
+	lp := &LogParser{
+		Rules:      []*Rule{},
+		MaxMatches: 1,
+	}
+	for _, opt := range opts {
+		opt(lp)
+	}
+
+	if lp.logger == nil {
+		lp.logger = slog.New(slog.DiscardHandler)
+	}
+
+	if lp.ctx == nil {
+		lp.ctx = context.Background()
+	}
+
+	return lp
+}
+
 // ParseFromSource parses logs from a LogSource and applies optional recursive
 // parsing when the source implements RecursiveLogSource.
-func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
+func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
-	if logger == nil {
-		logger = slog.New(slog.DiscardHandler)
-	}
+
 	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
 	if ok {
-		rules = append(rules, recursiveSource.GetDownstreamErrorRule())
+		lp.Rules = append(lp.Rules, recursiveSource.GetDownstreamErrorRule())
 	}
-	matches, stats, err := Parse(logs, rules, maxMatches, logger)
+	matches, stats, err := lp.Parse(logs)
 
 	if !ok {
 		stats.Duration = time.Since(startTime)
@@ -48,12 +99,12 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
 		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
-			logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
+			lp.logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
 			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to get downstream error logs: %w", err)
 			}
-			downstreamMatches, downstreamStats, err := Parse(downstreamLogs, rules, maxMatches, logger)
+			downstreamMatches, downstreamStats, err := lp.Parse(downstreamLogs)
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
@@ -61,7 +112,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 			stats.CompleteMatches += downstreamStats.CompleteMatches
 			stats.LinesParsed += downstreamStats.LinesParsed
 			if len(downstreamMatches) == 0 {
-				logger.Info("no further matches found in downstream logs")
+				lp.logger.Info("no further matches found in downstream logs")
 				break
 			}
 			matches = append(matches, downstreamMatches...)
@@ -89,13 +140,11 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 }
 
 // Parse scans a log stream line by line and returns all completed matches.
-func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
+	ctx, cancel := context.WithCancel(lp.ctx)
 	defer func() { _ = r.Close() }()
 	defer cancel()
-	if logger == nil {
-		logger = slog.New(slog.DiscardHandler)
-	}
+
 	stats := Stats{}
 	reader := bufio.NewReader(r)
 
@@ -103,6 +152,9 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 	matches := []*ParseMatch{}
 
 	matchChan := make(chan *ParseMatch, 100)
+	defer close(matchChan)
+
+	var rtn_err error = nil
 
 	lineNo := 0
 	for {
@@ -114,15 +166,19 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 			lineNo-- // Don't count the EOF as a line
 			break
 		} else if err == bufio.ErrBufferFull {
-			logger.Debug("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
+			lp.logger.Debug("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
-				return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+				rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+				cancel()
+				break
 			}
 			continue
 		} else if err != nil && err != io.EOF {
-			return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+			rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+			cancel()
+			break
 		}
 
 		line := &LogLine{
@@ -133,7 +189,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 		activeMatchers = purgeInactiveMatchers(lineNo, activeMatchers)
 		broadcastLogLine(line, activeMatchers)
 
-		pendingMatchers := initialCheckLine(line, rules)
+		pendingMatchers := initialCheckLine(line, lp.Rules)
 		for _, m := range pendingMatchers {
 			go runMatcher(ctx, m, matchChan)
 		}
@@ -144,7 +200,7 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 		newMatches := getNewParseMatches(matchChan)
 		if len(newMatches) > 0 {
 			matches = append(matches, newMatches...)
-			if len(matches) > maxMatches {
+			if len(matches) > lp.MaxMatches {
 				cancel()
 				break
 			}
@@ -161,9 +217,9 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 	stats.CompleteMatches = len(matches)
 
 	// Remove any excess matches if we exceeded the maxMatches limit.
-	if len(matches) > maxMatches {
-		matches = matches[:maxMatches]
+	if len(matches) > lp.MaxMatches {
+		matches = matches[:lp.MaxMatches]
 	}
 
-	return matches, stats, nil
+	return matches, stats, rtn_err
 }

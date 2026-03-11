@@ -18,8 +18,12 @@ type MockJenkinsClient struct {
 	GetBuildLogsFunc               func(jobName string, buildNumber int) (io.ReadCloser, error)
 }
 
-func (m *MockJenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
-	panic("GetBuildLogsWithContext is unimplemented")
+func (m *MockJenkinsClient) GetBuildLogs(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
+	if m.GetBuildLogsFunc != nil {
+		return m.GetBuildLogsFunc(jobName, buildNumber)
+	}
+	panic("GetBuildLogs is unimplemented")
+
 }
 func (m *MockJenkinsClient) IsJobURL(string) bool {
 	panic("IsJobURL is unimplemented")
@@ -32,13 +36,6 @@ func (m *MockJenkinsClient) GetJobNameAndNumberFromURL(url string) (string, int,
 	panic("GetJobNameAndNumberFromURL is unimplemented")
 }
 
-func (m *MockJenkinsClient) GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error) {
-	if m.GetBuildLogsFunc != nil {
-		return m.GetBuildLogsFunc(jobName, buildNumber)
-	}
-	panic("GetBuildLogs is unimplemented")
-}
-
 func TestNewJenkinsLogSource(t *testing.T) {
 	t.Run("creates source with single URL argument", func(t *testing.T) {
 		mockClient := &MockJenkinsClient{
@@ -47,7 +44,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 			},
 		}
 
-		source, err := NewJenkinsLogSource(mockClient, []string{"http://jenkins.example.com/job/test-job/42"})
+		source, err := NewJenkinsLogSource(mockClient, []string{"http://jenkins.example.com/job/test-job/42"}, t.Context())
 
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
@@ -65,7 +62,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 
 	t.Run("creates source with job name and build number arguments", func(t *testing.T) {
 		mockClient := &MockJenkinsClient{}
-		source, err := NewJenkinsLogSource(mockClient, []string{"my-job", "123"})
+		source, err := NewJenkinsLogSource(mockClient, []string{"my-job", "123"}, t.Context())
 
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
@@ -89,7 +86,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 			},
 		}
 
-		source, err := NewJenkinsLogSource(mockClient, []string{"invalid-url"})
+		source, err := NewJenkinsLogSource(mockClient, []string{"invalid-url"}, t.Context())
 
 		if err == nil {
 			t.Error("Expected error, got nil")
@@ -101,7 +98,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 
 	t.Run("returns error for invalid build number", func(t *testing.T) {
 		mockClient := &MockJenkinsClient{}
-		source, err := NewJenkinsLogSource(mockClient, []string{"job-name", "not-a-number"})
+		source, err := NewJenkinsLogSource(mockClient, []string{"job-name", "not-a-number"}, t.Context())
 
 		if err == nil {
 			t.Error("Expected error for invalid build number, got nil")
@@ -113,7 +110,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 
 	t.Run("returns error for zero arguments", func(t *testing.T) {
 		mockClient := &MockJenkinsClient{}
-		source, err := NewJenkinsLogSource(mockClient, []string{})
+		source, err := NewJenkinsLogSource(mockClient, []string{}, t.Context())
 
 		if err == nil {
 			t.Error("Expected error for zero arguments, got nil")
@@ -125,7 +122,7 @@ func TestNewJenkinsLogSource(t *testing.T) {
 
 	t.Run("returns error for more than two arguments", func(t *testing.T) {
 		mockClient := &MockJenkinsClient{}
-		source, err := NewJenkinsLogSource(mockClient, []string{"arg1", "arg2", "arg3"})
+		source, err := NewJenkinsLogSource(mockClient, []string{"arg1", "arg2", "arg3"}, t.Context())
 
 		if err == nil {
 			t.Error("Expected error for three arguments, got nil")
