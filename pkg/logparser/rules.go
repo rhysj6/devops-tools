@@ -7,18 +7,18 @@ import (
 
 // LineMatcher defines a single line condition using contains and/or regex.
 type LineMatcher struct {
-	Contains  string
-	RegexText string         `mapstructure:"regex"`
-	Regex     *regexp.Regexp `mapstructure:"-"`
+	Contains  string         `json:"contains"`
+	RegexText string         `mapstructure:"regex" json:"regex"`
+	Regex     *regexp.Regexp `mapstructure:"-" json:"-"`
 }
 
 // Rule defines an ordered set of checks and metadata for a log match.
 type Rule struct {
-	Name     string
-	Checks   []LineMatcher `mapstructure:"patterns"`
-	MaxLines int           `mapstructure:"maxlines"`
-	Solution string        `mapstructure:"solution"`
-	Category string        `mapstructure:"category"`
+	Name     string        `json:"name"`
+	Checks   []LineMatcher `mapstructure:"patterns" json:"patterns"`
+	MaxLines int           `mapstructure:"maxlines" json:"maxLines"`
+	Solution string        `mapstructure:"solution" json:"solution"`
+	Category string        `mapstructure:"category" json:"category"`
 }
 
 func (r Rule) getNeededLineCount() int {

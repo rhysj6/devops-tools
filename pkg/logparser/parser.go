@@ -7,8 +7,8 @@ import (
 
 // ParseMatch represents a successful rule match and the lines that matched.
 type ParseMatch struct {
-	Rule         *Rule
-	MatchedLines []*LogLine
+	Rule         *Rule      `json:"rule"`
+	MatchedLines []*LogLine `json:"matchedLines"`
 }
 
 type matcher struct {
@@ -21,8 +21,8 @@ type matcher struct {
 
 // LogLine is a single parsed line and its 1-based position in the source.
 type LogLine struct {
-	Content    string
-	LineNumber int
+	Content    string `json:"content"`
+	LineNumber int    `json:"lineNumber"`
 }
 
 func getNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
