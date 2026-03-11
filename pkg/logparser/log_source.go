@@ -2,11 +2,13 @@ package logparser
 
 import "io"
 
+// LogSource provides log content for the parser.
 type LogSource interface {
 	// Get the logs to be parsed. This should return an io.ReadCloser that can be used to read the logs line by line.
 	GetLogs() (io.ReadCloser, error)
 }
 
+// RecursiveLogSource extends LogSource with downstream log resolution.
 type RecursiveLogSource interface {
 	LogSource
 	// GetDownstreamErrorRule returns the rule that should match a log line to be an indication of a downstream error. E.g. a failed build in a downstream job in Jenkins.

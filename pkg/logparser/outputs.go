@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// TextOutput writes a human-readable summary of matches to the provided writer.
 func TextOutput(w io.Writer, matches []*ParseMatch) {
 	if len(matches) == 0 {
 		_, _ = fmt.Fprintln(w, "No matches found")

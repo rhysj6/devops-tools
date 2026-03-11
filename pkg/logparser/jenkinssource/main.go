@@ -11,6 +11,7 @@ import (
 
 var _ logparser.RecursiveLogSource = (*JenkinsLogSource)(nil)
 
+// JenkinsLogSource reads logs from a Jenkins job/build and its downstream failures.
 type JenkinsLogSource struct {
 	client                    Client
 	jobName                   string
@@ -18,6 +19,7 @@ type JenkinsLogSource struct {
 	downstreamFailedBuildRule *logparser.Rule
 }
 
+// NewJenkinsLogSource builds a JenkinsLogSource from CLI-style arguments for the build url or job name and build number.
 func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
@@ -48,10 +50,12 @@ func NewJenkinsLogSource(client Client, cmdArgs []string) (*JenkinsLogSource, er
 	return j, nil
 }
 
+// GetLogs returns console text for the configured Jenkins job/build.
 func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 	return j.client.GetBuildLogs(j.jobName, j.buildNumber)
 }
 
+// GetDownstreamErrorRule returns the rule used to detect downstream failures.
 func (j *JenkinsLogSource) GetDownstreamErrorRule() *logparser.Rule {
 	if j.downstreamFailedBuildRule == nil {
 		j.downstreamFailedBuildRule = &logparser.Rule{
@@ -88,6 +92,7 @@ func (j *JenkinsLogSource) getJobNameAndBuildNumberFromMatch(match *logparser.Pa
 	return jobName, buildNumber, nil
 }
 
+// GetDownstreamErrorLogs fetches logs for a downstream build parsed from a match.
 func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *logparser.ParseMatch) (io.ReadCloser, error) {
 	if match.Rule != j.GetDownstreamErrorRule() {
 		return nil, fmt.Errorf("match rule does not match downstream failed build rule")
@@ -102,6 +107,7 @@ func (j *JenkinsLogSource) GetDownstreamErrorLogs(match *logparser.ParseMatch) (
 	return j.client.GetBuildLogs(jobName, buildNumber)
 }
 
+// GetMaxRecursionDepth returns the maximum downstream parsing depth.
 func (j *JenkinsLogSource) GetMaxRecursionDepth() int {
 	return 3
 }

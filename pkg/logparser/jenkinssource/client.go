@@ -20,17 +20,20 @@ type Client interface {
 
 var _ Client = (*JenkinsClient)(nil)
 
+// JenkinsClient is an HTTP client for retrieving Jenkins build logs.
 type JenkinsClient struct {
 	URL      string `mapstructure:"url"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }
 
+// IsJobURL reports whether a URL points to a job under this Jenkins instance.
 func (j JenkinsClient) IsJobURL(s string) bool {
 	jenkinsURL := strings.TrimSuffix(j.URL, "/")
 	return strings.HasPrefix(s, jenkinsURL+"/job/")
 }
 
+// GetJobNameAndNumberFromURL parses a Jenkins job URL into name and build number.
 func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildNumber int, err error) {
 
 	if !j.IsJobURL(u) {
@@ -74,10 +77,12 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 	return name, buildNumber, nil
 }
 
+// GetBuildLogs fetches console text for a Jenkins job build.
 func (j JenkinsClient) GetBuildLogs(jobName string, buildNumber int) (io.ReadCloser, error) {
 	return j.GetBuildLogsWithContext(context.Background(), jobName, buildNumber)
 }
 
+// GetBuildLogsWithContext fetches console text for a Jenkins job build with context.
 func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
 	if strings.TrimSpace(jobName) == "" {
 		return nil, fmt.Errorf("job name is required")

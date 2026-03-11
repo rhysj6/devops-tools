@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Stats reports aggregate metrics from a parsing run.
 type Stats struct {
 	LinesParsed int           `json:"lines_parsed"`
 	Duration    time.Duration `json:"duration"`
@@ -18,6 +19,8 @@ type Stats struct {
 	CompleteMatches int `json:"complete_matches"`
 }
 
+// ParseFromSource parses logs from a LogSource and applies optional recursive
+// parsing when the source implements RecursiveLogSource.
 func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
@@ -81,6 +84,7 @@ func ParseFromSource(source LogSource, rules []*Rule, maxMatches int, logger *sl
 	return matches, stats, nil
 }
 
+// Parse scans a log stream line by line and returns all completed matches.
 func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() { _ = r.Close() }()
