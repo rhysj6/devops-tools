@@ -100,6 +100,8 @@ func TestParseFromSource(t *testing.T) {
 			Checks: []LineMatcher{{Contains: "2nd level"}},
 		}
 
+		hasGetDownstreamErrorLogsFuncBeenCalled := false
+
 		mockSource := &MockLogSource{
 			logs: io.NopCloser(strings.NewReader("line1\nline2\nline3\ndownstream log line\n")),
 			GetDownstreamErrorRuleFunc: func() *Rule {
@@ -109,6 +111,10 @@ func TestParseFromSource(t *testing.T) {
 				if pm.Rule != downstreamLogRule {
 					return nil, errors.New("unexpected rule in GetDownstreamErrorLogs")
 				}
+				if hasGetDownstreamErrorLogsFuncBeenCalled {
+					return nil, errors.New("GetDownstreamErrorLogs called more than once, unexpected")
+				}
+				hasGetDownstreamErrorLogsFuncBeenCalled = true
 				return io.NopCloser(strings.NewReader("something else\n")), nil
 			},
 		}
