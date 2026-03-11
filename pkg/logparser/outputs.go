@@ -1,6 +1,7 @@
 package logparser
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 )
@@ -24,4 +25,14 @@ func TextOutput(w io.Writer, matches []*ParseMatch) {
 			_, _ = fmt.Fprintf(w, "%v: %v \n", l.LineNumber, l.Content)
 		}
 	}
+}
+
+// JSONOutput writes a JSON array of matches to the provided writer.
+func JSONOutput(w io.Writer, matches []*ParseMatch) {
+	jsonBytes, err := json.MarshalIndent(matches, "", "  ")
+	if err != nil {
+		_, _ = fmt.Fprintf(w, "Error marshalling matches to JSON: %v", err)
+		return
+	}
+	_, _ = w.Write(jsonBytes)
 }
