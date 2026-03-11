@@ -2,9 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
-	"strings"
 
 	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
@@ -32,19 +30,6 @@ type LogParserConfig struct {
 	Rules      []*logparser.Rule `mapstructure:"rules"`
 	Output     string            `mapstructure:"output"`
 	MaxMatches int               `mapstructure:"maxmatches"`
-}
-
-func ParseSlogLevel(level string) slog.Level {
-	switch strings.ToLower(strings.TrimSpace(level)) {
-	case "debug":
-		return slog.LevelDebug
-	case "warn", "warning":
-		return slog.LevelWarn
-	case "error":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
 }
 
 func (c *LogParserConfig) CompileRegex() error {
