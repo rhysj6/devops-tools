@@ -152,6 +152,7 @@ func (lp *LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	matches := []*ParseMatch{}
 
 	matchChan := make(chan *ParseMatch, 100)
+	defer close(matchChan)
 
 	lineNo := 0
 	for {
