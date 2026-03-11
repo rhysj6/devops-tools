@@ -76,7 +76,7 @@ func (j JenkinsClient) GetJobNameAndNumberFromURL(u string) (name string, buildN
 	return name, buildNumber, nil
 }
 
-// GetBuildLogsWithContext fetches console text for a Jenkins job build.
+// GetBuildLogs fetches console text for a Jenkins job build.
 func (j JenkinsClient) GetBuildLogs(ctx context.Context, jobName string, buildNumber int) (io.ReadCloser, error) {
 	if strings.TrimSpace(jobName) == "" {
 		return nil, fmt.Errorf("job name is required")
