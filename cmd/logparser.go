@@ -20,7 +20,7 @@ func addLogParserCommands(rootCmd *cobra.Command) {
 		Long:    `Reads in the log and parses it against a set of rules in the config, will return the first matching true`,
 	}
 
-	logParserCmd.Flags().StringP("output", "o", "text", "output format (json|text)")
+	logParserCmd.PersistentFlags().StringP("output", "o", "text", "output format (json|text)")
 
 	validateCmd := &cobra.Command{
 		Use:   "validate",
@@ -98,6 +98,13 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		slog.Any("complete_matches", stats.CompleteMatches),
 	)
 
-	logparser.TextOutput(os.Stdout, matches)
+	outputFormat, _ := cmd.Flags().GetString("output")
+	switch outputFormat {
+	case "json":
+		logparser.JSONOutput(os.Stdout, matches)
+	default:
+		logparser.TextOutput(os.Stdout, matches)
+	}
+
 	return err
 }
