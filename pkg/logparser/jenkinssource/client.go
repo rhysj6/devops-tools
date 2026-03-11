@@ -2,7 +2,6 @@ package jenkinssource
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,8 +10,7 @@ import (
 	"strings"
 )
 
-var ErrUnauthorized = errors.New("jenkins authentication failed")
-
+// Client defines the Jenkins operations required by this package. This is public to allow us to mock Jenkins interactions tests.
 type Client interface {
 	IsJobURL(string) bool
 	GetJobNameAndNumberFromURL(string) (string, int, error)
@@ -107,10 +105,6 @@ func (j JenkinsClient) GetBuildLogsWithContext(ctx context.Context, jobName stri
 		return nil, err
 	}
 
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		_ = resp.Body.Close()
-		return nil, ErrUnauthorized
-	}
 	if resp.StatusCode != http.StatusOK {
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("failed to fetch build logs: status %d", resp.StatusCode)
