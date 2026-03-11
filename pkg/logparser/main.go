@@ -154,6 +154,8 @@ func (lp *LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	matchChan := make(chan *ParseMatch, 100)
 	defer close(matchChan)
 
+	var rtn_err error = nil
+
 	lineNo := 0
 	for {
 		lineNo++
@@ -168,11 +170,15 @@ func (lp *LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
-				return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+				rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+				cancel()
+				break
 			}
 			continue
 		} else if err != nil && err != io.EOF {
-			return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+			rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+			cancel()
+			break
 		}
 
 		line := &LogLine{
@@ -215,5 +221,5 @@ func (lp *LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 		matches = matches[:lp.MaxMatches]
 	}
 
-	return matches, stats, nil
+	return matches, stats, rtn_err
 }
