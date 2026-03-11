@@ -156,5 +156,10 @@ func Parse(r io.ReadCloser, rules []*Rule, maxMatches int, logger *slog.Logger) 
 	stats.LinesParsed = lineNo
 	stats.CompleteMatches = len(matches)
 
+	// Remove any excess matches if we exceeded the maxMatches limit.
+	if len(matches) > maxMatches {
+		matches = matches[:maxMatches]
+	}
+
 	return matches, stats, nil
 }
