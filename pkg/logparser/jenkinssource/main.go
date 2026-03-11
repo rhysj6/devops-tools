@@ -26,6 +26,9 @@ func NewJenkinsLogSource(client Client, cmdArgs []string, ctx context.Context) (
 	if client == nil {
 		return nil, fmt.Errorf("client cannot be nil")
 	}
+	if ctx == nil {
+		return nil, fmt.Errorf("context cannot be nil")
+	}
 
 	j := &JenkinsLogSource{
 		client: client,
