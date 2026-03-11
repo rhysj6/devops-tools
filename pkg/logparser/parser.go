@@ -126,7 +126,7 @@ func runMatcher(ctx context.Context, m *matcher, mc chan *ParseMatch) {
 				checkIndex++
 			}
 		case <-ctx.Done():
-			return // Just in case the context is cancelled while waiting for messages
+			return
 		}
 
 	}
