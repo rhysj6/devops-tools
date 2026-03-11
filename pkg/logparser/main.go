@@ -74,7 +74,7 @@ func NewLogParser(opts ...ParserOption) *LogParser {
 
 // ParseFromSource parses logs from a LogSource and applies optional recursive
 // parsing when the source implements RecursiveLogSource.
-func (lp *LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, error) {
+func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
 	if err != nil {
@@ -140,7 +140,7 @@ func (lp *LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, er
 }
 
 // Parse scans a log stream line by line and returns all completed matches.
-func (lp *LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
+func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(lp.ctx)
 	defer func() { _ = r.Close() }()
 	defer cancel()
