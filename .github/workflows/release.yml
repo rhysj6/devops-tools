@@ -36,22 +36,28 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go
 
-    - name: Build
-      run: go build -trimpath -ldflags="-s -w -X main.version=${{ github.event.release.tag_name }}" -o dist/devops-tools-${{ matrix.os }}-${{ matrix.arch }} -v .
+    - name: Build binary
+      run: go build -trimpath -ldflags="-s -w -X main.version=${{ github.event.release.tag_name }}" -o devops-tools -v .
       env:
         CGO_ENABLED: 0
         GOOS: ${{ matrix.os }}
         GOARCH: ${{ matrix.arch }}
 
-    - name: Add exe extension for Windows
+    - name: Package tarball (Linux/macOS)
+      if: matrix.os != 'windows'
+      run: tar -czf devops-tools-${{ matrix.os }}-${{ matrix.arch }}.tar.gz devops-tools
+
+    - name: Package tarball (Windows)
       if: matrix.os == 'windows'
-      run: mv dist/devops-tools-windows-amd64 dist/devops-tools-windows-amd64.exe
+      run: |
+        mv devops-tools devops-tools.exe
+        tar -czf devops-tools-${{ matrix.os }}-${{ matrix.arch }}.tar.gz devops-tools.exe
 
     - name: Upload artifact
       uses: actions/upload-artifact@v7
       with:
         name: devops-tools-${{ matrix.os }}-${{ matrix.arch }}
-        path: dist/devops-tools-${{ matrix.os }}-${{ matrix.arch }}*
+        path: devops-tools-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
 
   upload-assets:
     name: Upload Release Assets
