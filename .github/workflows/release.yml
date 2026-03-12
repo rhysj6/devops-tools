@@ -69,7 +69,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for file in ./artifacts/*; do
-            gh release upload "${{ github.event.release.tag_name }}" "$file"
+            gh release upload "${{ github.event.release.tag_name }}" "$file" --repo ${{ github.repository }}
           done
 
       - name: Mark release as non-prerelease
