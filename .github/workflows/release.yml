@@ -28,13 +28,7 @@ jobs:
       uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
-
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go
+        cache: true
 
     - name: Build binary
       run: go build -trimpath -ldflags="-s -w -X main.version=${{ github.event.release.tag_name }}" -o devops-tools -v .
