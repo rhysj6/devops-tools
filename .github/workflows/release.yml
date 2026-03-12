@@ -2,7 +2,7 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
     contents: write
@@ -76,8 +76,8 @@ jobs:
             gh release upload "${{ github.event.release.tag_name }}" "$file"
           done
 
-      - name: Publish release
+      - name: Mark release as non-prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release edit ${{ github.event.release.tag_name }} --draft=false
+          gh release edit ${{ github.event.release.tag_name }} --prerelease=false
