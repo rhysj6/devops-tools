@@ -75,5 +75,6 @@ jobs:
       - name: Mark release as non-prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit ${{ github.event.release.tag_name }} --prerelease=false
+        run: gh release edit ${{ github.event.release.tag_name }} --prerelease=false --repo ${{ github.repository }}
+        # Only mark as non-prerelease if the tag does not contain "rc"
+        if: "!contains(github.event.release.tag_name, 'rc')"
