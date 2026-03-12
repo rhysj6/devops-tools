@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+permissions:
+    contents: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: ci
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: darwin
+            arch: arm64
+          - os: windows
+            arch: amd64
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go
+
+    - name: Build
+      run: go build . -o dist/devops-tools-${{ matrix.os }}-${{ matrix.arch }} -v ./... -ldflags="-s -w -X main.version=${{ github.event.release.tag_name }}" -trimpath
+      env:
+        CGO_ENABLED: 0
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+
+    - name: Add exe extension for Windows
+      if: matrix.os == 'windows'
+      run: mv dist/devops-tools-windows-amd64 dist/devops-tools-windows-amd64.exe
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: devops-tools-${{ matrix.os }}-${{ matrix.arch }}
+        path: dist/devops-tools-${{ matrix.os }}-${{ matrix.arch }}*
+
+  upload-assets:
+    name: Upload Release Assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Upload assets to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for file in ./artifacts/*; do
+            gh release upload "${{ github.event.release.tag_name }}" "$file"
+          done
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit ${{ github.event.release.tag_name }} --draft=false
