@@ -99,6 +99,7 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 		logparser.WithMaxMatches(cfg.LogParser.MaxMatches),
 		logparser.WithLogger(logger),
 		logparser.WithContext(ctx),
+		logparser.WithMaxLineSizeKB(cfg.LogParser.MaxLineSizeKB),
 	)
 
 	matches, stats, err := parser.ParseFromSource(logSource)

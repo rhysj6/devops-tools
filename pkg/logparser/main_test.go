@@ -288,4 +288,23 @@ func TestParse(t *testing.T) {
 			t.Fatalf("LinesParsed = %d, want 3", stats.LinesParsed)
 		}
 	})
+
+	t.Run("handles custom max line size", func(t *testing.T) {
+		sb := strings.Builder{}
+		sb.WriteString("Starting line\n")
+		sb.WriteString(strings.Repeat("x", 8193))
+		sb.WriteString("\nEnding line\n")
+
+		reader := io.NopCloser(strings.NewReader(sb.String()))
+
+		parser := NewLogParser(WithMaxLineSizeKB(8))
+		_, stats, err := parser.Parse(reader)
+		if err != nil {
+			t.Fatalf("Parse returned error: %v", err)
+		}
+
+		if stats.LinesParsed != 3 {
+			t.Fatalf("LinesParsed = %d, want 3", stats.LinesParsed)
+		}
+	})
 }
