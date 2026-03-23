@@ -20,10 +20,11 @@ type Stats struct {
 }
 
 type LogParser struct {
-	Rules      []*Rule
-	MaxMatches int
-	logger     *slog.Logger
-	ctx        context.Context
+	Rules         []*Rule
+	MaxMatches    int
+	MaxLineSizeKB int
+	logger        *slog.Logger
+	ctx           context.Context
 }
 
 type ParserOption func(*LogParser)
@@ -52,10 +53,17 @@ func WithContext(ctx context.Context) ParserOption {
 	}
 }
 
+func WithMaxLineSizeKB(size int) ParserOption {
+	return func(lp *LogParser) {
+		lp.MaxLineSizeKB = size
+	}
+}
+
 func NewLogParser(opts ...ParserOption) *LogParser {
 	lp := &LogParser{
-		Rules:      []*Rule{},
-		MaxMatches: 1,
+		Rules:         []*Rule{},
+		MaxMatches:    1,
+		MaxLineSizeKB: 4,
 	}
 	for _, opt := range opts {
 		opt(lp)
@@ -146,7 +154,7 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	defer cancel()
 
 	stats := Stats{}
-	reader := bufio.NewReader(r)
+	reader := bufio.NewReaderSize(r, lp.MaxLineSizeKB*1024)
 
 	activeMatchers := []*matcher{}
 	matches := []*ParseMatch{}
@@ -159,14 +167,14 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	lineNo := 0
 	for {
 		lineNo++
-		// Read the line, if the line is more than 4kb then discard it.
+		// Read the line, if the line is more than MaxLineSizeKB then discard it.
 		lineBytes, err := reader.ReadSlice('\n')
 
 		if err == io.EOF && len(lineBytes) == 0 {
 			lineNo-- // Don't count the EOF as a line
 			break
 		} else if err == bufio.ErrBufferFull {
-			lp.logger.Debug("skipping line as it's more than 4kb", slog.Int("line_number", lineNo))
+			lp.logger.Debug("skipping line as it's more than MaxLineSizeKB", slog.Int("line_number", lineNo))
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
