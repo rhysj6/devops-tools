@@ -21,15 +21,20 @@ func (c *Config) SetupConfig() error {
 		if c.LogParser.MaxMatches == 0 {
 			c.LogParser.MaxMatches = 1
 		}
+
+		if c.LogParser.MaxLineSizeKB == 0 {
+			c.LogParser.MaxLineSizeKB = 4
+		}
 	}
 
 	return nil
 }
 
 type LogParserConfig struct {
-	Rules      []*logparser.Rule `mapstructure:"rules"`
-	Output     string            `mapstructure:"output"`
-	MaxMatches int               `mapstructure:"maxmatches"`
+	Rules         []*logparser.Rule `mapstructure:"rules"`
+	Output        string            `mapstructure:"output"`
+	MaxMatches    int               `mapstructure:"maxmatches"`
+	MaxLineSizeKB int               `mapstructure:"maxlinesizekb"`
 }
 
 func (c *LogParserConfig) CompileRegex() error {
