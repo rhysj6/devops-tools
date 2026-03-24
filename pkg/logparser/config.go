@@ -55,6 +55,8 @@ func (c *Config) CompileRegex() error {
 	return nil
 }
 
+// Validate checks that all rules are well-formed. It compiles regex patterns
+// as part of validation to catch any invalid regex syntax.
 func (c *Config) Validate() error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
