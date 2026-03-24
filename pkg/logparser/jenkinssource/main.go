@@ -17,7 +17,7 @@ type JenkinsLogSource struct {
 	client                    Client
 	jobName                   string
 	buildNumber               int
-	downstreamFailedBuildRule *logparser.Rule
+	downstreamFailedBuildRule *logparser.MatchRule
 	ctx                       context.Context
 }
 
@@ -62,11 +62,11 @@ func (j *JenkinsLogSource) GetLogs() (io.ReadCloser, error) {
 }
 
 // GetDownstreamErrorRule returns the rule used to detect downstream failures.
-func (j *JenkinsLogSource) GetDownstreamErrorRule() *logparser.Rule {
+func (j *JenkinsLogSource) GetDownstreamErrorRule() *logparser.MatchRule {
 	if j.downstreamFailedBuildRule == nil {
-		j.downstreamFailedBuildRule = &logparser.Rule{
+		j.downstreamFailedBuildRule = &logparser.MatchRule{
 			Name: "Downstream Failed Jenkins Build",
-			Checks: []logparser.LineMatcher{
+			Checks: []logparser.LineCheck{
 				{Contains: "completed: FAILURE", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\d+)(?::\s*(?P<suffix>.*?))?\s+completed:\s+FAILURE\s*$`)},
 			},
 			Solution: "If there are no other matches, then look at the logs of the downstream failed build for more information on why the build failed.",

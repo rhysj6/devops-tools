@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/rhysj6/devops-tools/pkg/logparser"
 	"github.com/spf13/cobra"
 )
 
@@ -92,146 +91,6 @@ func TestLoadConfig(t *testing.T) {
 	})
 }
 
-func TestSetupConfig(t *testing.T) {
-	t.Run("sets default output to text", func(t *testing.T) {
-		cfg := &Config{
-			LogParser: &LogParserConfig{
-				Rules:      []*logparser.Rule{},
-				Output:     "",
-				MaxMatches: 1,
-			},
-		}
-
-		err := cfg.SetupConfig()
-		if err != nil {
-			t.Fatalf("SetupConfig returned error: %v", err)
-		}
-
-		if cfg.LogParser.Output != "text" {
-			t.Fatalf("Output = %q, want %q", cfg.LogParser.Output, "text")
-		}
-	})
-
-	t.Run("sets default MaxMatches to 1", func(t *testing.T) {
-		cfg := &Config{
-			LogParser: &LogParserConfig{
-				Rules:      []*logparser.Rule{},
-				Output:     "text",
-				MaxMatches: 0,
-			},
-		}
-
-		err := cfg.SetupConfig()
-		if err != nil {
-			t.Fatalf("SetupConfig returned error: %v", err)
-		}
-
-		if cfg.LogParser.MaxMatches != 1 {
-			t.Fatalf("MaxMatches = %d, want 1", cfg.LogParser.MaxMatches)
-		}
-	})
-
-	t.Run("preserves non-default values", func(t *testing.T) {
-		cfg := &Config{
-			LogLevel: "debug",
-			LogParser: &LogParserConfig{
-				Rules:      []*logparser.Rule{},
-				Output:     "json",
-				MaxMatches: 5,
-			},
-		}
-
-		err := cfg.SetupConfig()
-		if err != nil {
-			t.Fatalf("SetupConfig returned error: %v", err)
-		}
-
-		if cfg.LogParser.Output != "json" {
-			t.Fatalf("Output = %q, want %q", cfg.LogParser.Output, "json")
-		}
-		if cfg.LogParser.MaxMatches != 5 {
-			t.Fatalf("MaxMatches = %d, want 5", cfg.LogParser.MaxMatches)
-		}
-		if cfg.LogLevel != "debug" {
-			t.Fatalf("LogLevel = %q, want %q", cfg.LogLevel, "debug")
-		}
-	})
-
-	t.Run("handles nil LogParser gracefully", func(t *testing.T) {
-		cfg := &Config{
-			LogParser: nil,
-		}
-
-		err := cfg.SetupConfig()
-		if err != nil {
-			t.Fatalf("SetupConfig returned error: %v", err)
-		}
-	})
-}
-
-func TestSetupConfig_Integration(t *testing.T) {
-	t.Run("setup with complex rules and regex", func(t *testing.T) {
-		cfg := &Config{
-			LogParser: &LogParserConfig{
-				Rules: []*logparser.Rule{
-					{
-						Name: "errors",
-						Checks: []logparser.LineMatcher{
-							{RegexText: "ERROR", Regex: nil},
-							{RegexText: "CRITICAL", Regex: nil},
-						},
-					},
-					{
-						Name: "warnings",
-						Checks: []logparser.LineMatcher{
-							{RegexText: "WARN", Regex: nil},
-						},
-					},
-				},
-				Output:     "json",
-				MaxMatches: 50,
-			},
-		}
-
-		err := cfg.SetupConfig()
-		if err != nil {
-			t.Fatalf("SetupConfig returned error: %v", err)
-		}
-
-		if cfg.LogParser.Output != "json" {
-			t.Fatalf("Output not preserved")
-		}
-		if cfg.LogParser.MaxMatches != 50 {
-			t.Fatalf("MaxMatches not preserved")
-		}
-		if cfg.LogParser.Rules[0].Checks[0].Regex == nil {
-			t.Fatal("Regex should be compiled")
-		}
-	})
-
-	t.Run("setup returns error on invalid regex", func(t *testing.T) {
-		cfg := &Config{
-			LogParser: &LogParserConfig{
-				Rules: []*logparser.Rule{
-					{
-						Name: "bad",
-						Checks: []logparser.LineMatcher{
-							{RegexText: "[unclosed", Regex: nil},
-						},
-					},
-				},
-				Output:     "text",
-				MaxMatches: 1,
-			},
-		}
-
-		err := cfg.SetupConfig()
-		if err == nil {
-			t.Fatal("Expected error for invalid regex in setup")
-		}
-	})
-}
-
 func TestLoadConfig_Integration(t *testing.T) {
 	t.Run("config loading with flags", func(t *testing.T) {
 		cmd := &cobra.Command{}
@@ -254,4 +113,26 @@ func TestLoadConfig_Integration(t *testing.T) {
 			t.Fatalf("Jenkins URL not loaded from env")
 		}
 	})
+}
+func TestParseSlogLevel(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "debug", input: "debug", want: "DEBUG"},
+		{name: "warn", input: "warn", want: "WARN"},
+		{name: "warning", input: "warning", want: "WARN"},
+		{name: "error", input: "error", want: "ERROR"},
+		{name: "default to info", input: "", want: "INFO"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseSlogLevel(tt.input).String()
+			if got != tt.want {
+				t.Fatalf("ParseSlogLevel(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
 }

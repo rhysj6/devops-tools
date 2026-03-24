@@ -10,7 +10,7 @@ import (
 func TestTextOutput(t *testing.T) {
 
 	exampleParseMatch := &ParseMatch{
-		Rule: &Rule{
+		Rule: &MatchRule{
 			Name:     "Test rule",
 			Solution: "Test solution",
 		},
@@ -43,7 +43,7 @@ func TestTextOutput(t *testing.T) {
 			name: "Category is displayed when set",
 			matches: []*ParseMatch{
 				{
-					Rule: &Rule{
+					Rule: &MatchRule{
 						Name:     "Test rule",
 						Category: "Test category",
 						Solution: "Test solution",
@@ -96,7 +96,7 @@ func TestJSONOutput(t *testing.T) {
 			name: "Single match includes expected fields",
 			matches: []*ParseMatch{
 				{
-					Rule: &Rule{
+					Rule: &MatchRule{
 						Name:     "Rule A",
 						Category: "Build",
 						Solution: "Do thing",

@@ -7,12 +7,14 @@ import (
 
 // ParseMatch represents a successful rule match and the lines that matched.
 type ParseMatch struct {
-	Rule         *Rule      `json:"rule"`
+	Rule         *MatchRule `json:"rule"`
 	MatchedLines []*LogLine `json:"matchedLines"`
 }
 
-type matcher struct {
-	Rule            *Rule
+// parseMatchCandidate represents a potential match that is currently being evaluated. It holds the state needed to evaluate the match and communicate with the main parsing loop.
+// It has a receiver channel for new lines to check against the rule, and a done channel to signal when the match evaluation is complete. The main parsing loop will manage the lifecycle of these candidates, including purging inactive ones and broadcasting new lines to them.
+type parseMatchCandidate struct {
+	Rule            *MatchRule
 	FirstLine       *LogLine
 	FinalLineNumber int
 	LineChannel     chan *LogLine // Used for adding new log lines
@@ -37,14 +39,15 @@ func getNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
 	}
 }
 
-func purgeInactiveMatchers(lineNumber int, matchers []*matcher) []*matcher {
-	activeMatchers := []*matcher{}
+func purgeInactiveMatchCandidates(lineNumber int, matcherCandidates []*parseMatchCandidate) []*parseMatchCandidate {
+	activeMatchers := []*parseMatchCandidate{}
 
-	for _, m := range matchers {
+	for _, m := range matcherCandidates {
 		if lineNumber > m.FinalLineNumber {
 			close(m.LineChannel) // Reached maximum lines
 			continue
 		}
+		// If the matcher is done, don't add it to the active matchers list and close its channel.
 		select {
 		case <-m.DoneChannel:
 			close(m.LineChannel) // Matcher is done
@@ -57,29 +60,31 @@ func purgeInactiveMatchers(lineNumber int, matchers []*matcher) []*matcher {
 	return activeMatchers
 }
 
-func broadcastLogLine(line *LogLine, matchers []*matcher) {
+func broadcastLogLine(line *LogLine, matchers []*parseMatchCandidate) {
 	for _, m := range matchers {
 		m.LineChannel <- line
 	}
 }
 
-func initialCheckLine(line *LogLine, rules []*Rule) []*matcher {
-	c := make(chan *matcher, len(rules))
+func matchLineAgainstFirstChecks(line *LogLine, rules []*MatchRule) []*parseMatchCandidate {
+	c := make(chan *parseMatchCandidate, len(rules))
 	var wg sync.WaitGroup
 
 	for _, r := range rules {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, c chan *matcher, r *Rule, l *LogLine) {
+		go func(wg *sync.WaitGroup, c chan *parseMatchCandidate, r *MatchRule, l *LogLine) {
 			defer wg.Done()
 			if len(r.Checks) > 0 && r.Checks[0].CheckLine(l.Content) {
-				c <- newMatcher(line, r)
+				c <- createMatchCandidate(line, r)
 			}
 		}(&wg, c, r, line)
 	}
 
+	// Wait for all checks to finish
 	wg.Wait()
-	matchers := []*matcher{}
+	matchers := []*parseMatchCandidate{}
 
+	// Collect all the matchers from the channel until it's empty
 	for {
 		select {
 		case msg := <-c:
@@ -90,8 +95,8 @@ func initialCheckLine(line *LogLine, rules []*Rule) []*matcher {
 	}
 }
 
-func newMatcher(firstLine *LogLine, rule *Rule) *matcher {
-	return &matcher{
+func createMatchCandidate(firstLine *LogLine, rule *MatchRule) *parseMatchCandidate {
+	return &parseMatchCandidate{
 		LineChannel:     make(chan *LogLine, rule.getNeededLineCount()),
 		DoneChannel:     make(chan struct{}),
 		Rule:            rule,
@@ -100,7 +105,7 @@ func newMatcher(firstLine *LogLine, rule *Rule) *matcher {
 	}
 }
 
-func runMatcher(ctx context.Context, m *matcher, mc chan *ParseMatch) {
+func runMatchCandidate(ctx context.Context, m *parseMatchCandidate, mc chan *ParseMatch) {
 	defer close(m.DoneChannel)
 	matchedLines := []*LogLine{m.FirstLine}
 	checkIndex := 1 // Already matched the first line

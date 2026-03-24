@@ -19,7 +19,7 @@ func addLogParserCommands(rootCmd *cobra.Command) {
 		Use:     "logparser",
 		Aliases: []string{"lp"},
 		Short:   "Pipeline failure parser",
-		Long:    `Reads in the log and parses it against a set of rules in the config, will return the first matching true`,
+		Long:    `Reads in the log and parses it against a set of parsing rules in the config, will return the first matching true`,
 	}
 
 	logParserCmd.PersistentFlags().StringP("output", "o", "text", "output format (json|text)")
@@ -95,7 +95,7 @@ func runLogParser(cmd *cobra.Command, source string, args []string) error {
 	}
 
 	parser := logparser.NewLogParser(
-		logparser.WithRules(cfg.LogParser.Rules),
+		logparser.WithRules(cfg.LogParser.MatchRules),
 		logparser.WithMaxMatches(cfg.LogParser.MaxMatches),
 		logparser.WithLogger(logger),
 		logparser.WithContext(ctx),
