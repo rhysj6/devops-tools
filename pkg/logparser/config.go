@@ -1,43 +1,41 @@
-package config
+package logparser
 
 import (
 	"fmt"
 	"regexp"
-
-	"github.com/rhysj6/devops-tools/pkg/logparser"
 )
 
-func (c *Config) SetupConfig() error {
-	if c.LogParser != nil {
-		err := c.LogParser.CompileRegex()
+type Config struct {
+	Rules         []*Rule `mapstructure:"rules"`
+	Output        string  `mapstructure:"output"`
+	MaxMatches    int     `mapstructure:"maxmatches"`
+	MaxLineSizeKB int     `mapstructure:"maxlinesizekb"`
+}
+
+func (c *Config) ApplyDefaults() error {
+	if c != nil {
+		err := c.CompileRegex()
 		if err != nil {
 			return err
 		}
 
-		if c.LogParser.Output == "" {
-			c.LogParser.Output = "text"
+		if c.Output == "" {
+			c.Output = "text"
 		}
 
-		if c.LogParser.MaxMatches == 0 {
-			c.LogParser.MaxMatches = 1
+		if c.MaxMatches == 0 {
+			c.MaxMatches = 1
 		}
 
-		if c.LogParser.MaxLineSizeKB == 0 {
-			c.LogParser.MaxLineSizeKB = 4
+		if c.MaxLineSizeKB == 0 {
+			c.MaxLineSizeKB = 4
 		}
 	}
 
 	return nil
 }
 
-type LogParserConfig struct {
-	Rules         []*logparser.Rule `mapstructure:"rules"`
-	Output        string            `mapstructure:"output"`
-	MaxMatches    int               `mapstructure:"maxmatches"`
-	MaxLineSizeKB int               `mapstructure:"maxlinesizekb"`
-}
-
-func (c *LogParserConfig) CompileRegex() error {
+func (c *Config) CompileRegex() error {
 	for i := range c.Rules {
 		for j := range c.Rules[i].Checks {
 			if c.Rules[i].Checks[j].RegexText != "" {
@@ -53,7 +51,7 @@ func (c *LogParserConfig) CompileRegex() error {
 	return nil
 }
 
-func (c *LogParserConfig) Validate() error {
+func (c *Config) Validate() error {
 	err := c.CompileRegex()
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)

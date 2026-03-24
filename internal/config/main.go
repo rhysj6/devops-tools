@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rhysj6/devops-tools/pkg/logparser"
 	"github.com/rhysj6/devops-tools/pkg/logparser/jenkinssource"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +15,7 @@ import (
 
 type Config struct {
 	LogLevel  string                      `mapstructure:"log_level"`
-	LogParser *LogParserConfig            `mapstructure:"logparser"`
+	LogParser *logparser.Config           `mapstructure:"logparser"`
 	Jenkins   jenkinssource.JenkinsClient `mapstructure:"jenkins"`
 }
 
@@ -56,7 +57,7 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 		return nil, err
 	}
 
-	err = config.SetupConfig()
+	err = config.LogParser.ApplyDefaults()
 	if err != nil {
 		return nil, err
 	}
