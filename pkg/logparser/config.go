@@ -36,6 +36,9 @@ func (c *Config) ApplyDefaults() error {
 }
 
 func (c *Config) CompileRegex() error {
+	if c == nil || c.MatchRules == nil {
+		return fmt.Errorf("config is nil or has no match rules")
+	}
 	for i := range c.MatchRules {
 		for j := range c.MatchRules[i].Checks {
 			if c.MatchRules[i].Checks[j].RegexText != "" {
@@ -52,6 +55,9 @@ func (c *Config) CompileRegex() error {
 }
 
 func (c *Config) Validate() error {
+	if c == nil {
+		return fmt.Errorf("config is nil")
+	}
 	err := c.CompileRegex()
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
