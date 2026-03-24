@@ -214,8 +214,8 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("returns error when regex is nil", func(t *testing.T) {
 		match := &logparser.ParseMatch{
-			Rule: &logparser.Rule{
-				Checks: []logparser.LineMatcher{
+			Rule: &logparser.MatchRule{
+				Checks: []logparser.LineCheck{
 					{Contains: "test", Regex: nil},
 				},
 			},
@@ -249,8 +249,8 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("returns error when named groups are missing", func(t *testing.T) {
 		match := &logparser.ParseMatch{
-			Rule: &logparser.Rule{
-				Checks: []logparser.LineMatcher{
+			Rule: &logparser.MatchRule{
+				Checks: []logparser.LineCheck{
 					{Contains: "test", Regex: regexp.MustCompile(`(?m)^Build\s+(.+?)\s+#(\d+)\s+completed:\s+FAILURE\s*$`)},
 				},
 			},
@@ -268,8 +268,8 @@ func TestGetJobNameAndBuildNumberFromMatch(t *testing.T) {
 
 	t.Run("returns error when build number is not a valid integer", func(t *testing.T) {
 		match := &logparser.ParseMatch{
-			Rule: &logparser.Rule{
-				Checks: []logparser.LineMatcher{
+			Rule: &logparser.MatchRule{
+				Checks: []logparser.LineCheck{
 					{Contains: "test", Regex: regexp.MustCompile(`(?m)^Build\s+(?P<job>.+?)\s+#(?P<number>\D+)\s+completed:\s+FAILURE\s*$`)},
 				},
 			},
@@ -299,7 +299,7 @@ func TestGetDownstreamFailedBuildLogs(t *testing.T) {
 			client: &MockJenkinsClient{},
 		}
 		match := &logparser.ParseMatch{
-			Rule: &logparser.Rule{},
+			Rule: &logparser.MatchRule{},
 			MatchedLines: []*logparser.LogLine{
 				{Content: "Build Example_Build #5 completed: FAILURE"},
 			},

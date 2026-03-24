@@ -20,7 +20,7 @@ type Stats struct {
 }
 
 type LogParser struct {
-	Rules         []*Rule
+	Rules         []*MatchRule
 	MaxMatches    int
 	MaxLineSizeKB int
 	logger        *slog.Logger
@@ -29,39 +29,45 @@ type LogParser struct {
 
 type ParserOption func(*LogParser)
 
-func WithRules(rules []*Rule) ParserOption {
+// WithRules sets the rules that the LogParser will use to parse logs. If not set, then no matches will be found by default.
+func WithRules(rules []*MatchRule) ParserOption {
 	return func(lp *LogParser) {
 		lp.Rules = rules
 	}
 }
 
+// WithMaxMatches sets the maximum number of matches that the parser will return. If the parser finds more matches than this, it will stop parsing and return the matches found so far. Default is 1.
 func WithMaxMatches(max int) ParserOption {
 	return func(lp *LogParser) {
 		lp.MaxMatches = max
 	}
 }
 
+// WithLogger sets the logger for the LogParser. If not set, then no logs will be emitted by default.
 func WithLogger(logger *slog.Logger) ParserOption {
 	return func(lp *LogParser) {
 		lp.logger = logger
 	}
 }
 
+// WithContext sets the context for the LogParser. This context will be used to manage cancellation and timeouts for parsing operations. If not set, context.Background() will be used by default.
 func WithContext(ctx context.Context) ParserOption {
 	return func(lp *LogParser) {
 		lp.ctx = ctx
 	}
 }
 
+// WithMaxLineSizeKB sets the maximum line size in KB that the parser will read. Lines longer than this will be skipped. Default is 4KB.
 func WithMaxLineSizeKB(size int) ParserOption {
 	return func(lp *LogParser) {
 		lp.MaxLineSizeKB = size
 	}
 }
 
+// Create a new LogParser with the provided options. If no logger is provided, a default logger that discards output will be used. If no context is provided, context.Background() will be used.
 func NewLogParser(opts ...ParserOption) *LogParser {
 	lp := &LogParser{
-		Rules:         []*Rule{},
+		Rules:         []*MatchRule{},
 		MaxMatches:    1,
 		MaxLineSizeKB: 4,
 	}
@@ -82,6 +88,7 @@ func NewLogParser(opts ...ParserOption) *LogParser {
 
 // ParseFromSource parses logs from a LogSource and applies optional recursive
 // parsing when the source implements RecursiveLogSource.
+// Recieves the value of the LogParser as a non-pointer to ensure that the original LogParser's rules are not modified when appending the downstream error rule for recursive parsing.
 func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()
@@ -89,14 +96,16 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 		return nil, Stats{}, fmt.Errorf("failed to get logs from source: %w", err)
 	}
 
-	recursiveSource, ok := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
+	recursiveSource, isRecursiveLogSource := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
-	if ok {
+	if isRecursiveLogSource {
 		lp.Rules = append(lp.Rules, recursiveSource.GetDownstreamErrorRule())
 	}
+	// Initial parse of the logs from the source
 	matches, stats, err := lp.Parse(logs)
 
-	if !ok {
+	// If the source isn't a RecursiveLogSource, then we can return the results early.
+	if !isRecursiveLogSource {
 		stats.Duration = time.Since(startTime)
 		return matches, stats, err
 	}
@@ -105,17 +114,22 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 		return nil, stats, fmt.Errorf("failed to parse logs: %w", err)
 	}
 
+	// Recursively parse downstream logs if we find a potential downstream failure mention, up to the maximum recursion depth specified by the RecursiveLogSource implementation or 3.
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
+		// Only checks for downstream errors if no other matches were found.
 		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
 			lp.logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
+
 			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to get downstream error logs: %w", err)
 			}
+
 			downstreamMatches, downstreamStats, err := lp.Parse(downstreamLogs)
 			if err != nil {
 				return nil, stats, fmt.Errorf("failed to parse downstream error logs: %w", err)
 			}
+
 			stats.PartialMatches += downstreamStats.PartialMatches
 			stats.CompleteMatches += downstreamStats.CompleteMatches
 			stats.LinesParsed += downstreamStats.LinesParsed
@@ -129,6 +143,7 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 		}
 	}
 
+	// Remove any matches that are for the downstream error rule, as these are not relevant if there are other matches found in the logs.
 	customMatches := []*ParseMatch{}
 	for _, m := range matches {
 		if m.Rule != recursiveSource.GetDownstreamErrorRule() {
@@ -138,7 +153,6 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 
 	stats.Duration = time.Since(startTime)
 
-	// Filter out the downstream failure mentions if there are recognised matches in the final logs.
 	if len(customMatches) > 0 {
 		stats.CompleteMatches = len(customMatches)
 		return customMatches, stats, nil
@@ -150,19 +164,22 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 // Parse scans a log stream line by line and returns all completed matches.
 func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(lp.ctx)
+	// Close the reader when we're done parsing, and cancel the context to stop any ongoing matcher goroutines.
 	defer func() { _ = r.Close() }()
 	defer cancel()
 
 	stats := Stats{}
 	reader := bufio.NewReaderSize(r, lp.MaxLineSizeKB*1024)
 
-	activeMatchers := []*matcher{}
+	// activeMatchers holds all matchers that are currently running and have not yet completed.
+	activeMatchers := []*parseMatchCandidate{}
 	matches := []*ParseMatch{}
 
+	// matchChan is used to receive completed matches from the matcher goroutines.
 	matchChan := make(chan *ParseMatch, 100)
 	defer close(matchChan)
 
-	var rtn_err error = nil
+	var rtnErr error = nil
 
 	lineNo := 0
 	for {
@@ -178,13 +195,14 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
-				rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+				rtnErr = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 				cancel()
 				break
 			}
 			continue
+
 		} else if err != nil && err != io.EOF {
-			rtn_err = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
+			rtnErr = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 			cancel()
 			break
 		}
@@ -194,12 +212,12 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 			LineNumber: lineNo,
 		}
 
-		activeMatchers = purgeInactiveMatchers(lineNo, activeMatchers)
+		activeMatchers = purgeInactiveMatchCandidates(lineNo, activeMatchers)
 		broadcastLogLine(line, activeMatchers)
 
-		pendingMatchers := initialCheckLine(line, lp.Rules)
+		pendingMatchers := matchLineAgainstFirstChecks(line, lp.Rules)
 		for _, m := range pendingMatchers {
-			go runMatcher(ctx, m, matchChan)
+			go runMatchCandidate(ctx, m, matchChan)
 		}
 
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)
@@ -229,5 +247,5 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 		matches = matches[:lp.MaxMatches]
 	}
 
-	return matches, stats, rtn_err
+	return matches, stats, rtnErr
 }

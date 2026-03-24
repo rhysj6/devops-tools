@@ -26,9 +26,9 @@ func TestGetNewParseMatches(t *testing.T) {
 }
 
 func TestNewMatcher(t *testing.T) {
-	r := Rule{
+	r := MatchRule{
 		Name: "TestRule",
-		Checks: []LineMatcher{
+		Checks: []LineCheck{
 			{Contains: "Hi"},
 			{Contains: "Hello"},
 		},
@@ -37,7 +37,7 @@ func TestNewMatcher(t *testing.T) {
 	l := LogLine{
 		LineNumber: 17,
 	}
-	m := newMatcher(&l, &r)
+	m := createMatchCandidate(&l, &r)
 
 	if m.Rule != &r {
 		t.Fatal("Not including correct Rule pointer")
@@ -53,11 +53,11 @@ func TestNewMatcher(t *testing.T) {
 }
 
 func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
-	Rule := Rule{Checks: []LineMatcher{{Contains: "Hi"}}} // Rule with at least 1 check so line channel has a buffer
-	m1 := newMatcher(&LogLine{LineNumber: 1}, &Rule)
-	m2 := newMatcher(&LogLine{LineNumber: 1}, &Rule)
+	Rule := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}} // Rule with at least 1 check so line channel has a buffer
+	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
 
-	matchers := []*matcher{m1, m2}
+	matchers := []*parseMatchCandidate{m1, m2}
 
 	broadcastLogLine(&LogLine{Content: "Hi"}, matchers)
 
@@ -80,16 +80,16 @@ func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
 }
 
 func TestPurgeInactiveMatchers(t *testing.T) {
-	Rule := Rule{}
+	Rule := MatchRule{}
 
-	expiredMatcher := newMatcher(&LogLine{LineNumber: 1}, &Rule)
-	closedMatcher := newMatcher(&LogLine{LineNumber: 17}, &Rule)
+	expiredMatcher := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	closedMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
 	close(closedMatcher.DoneChannel)
-	m := newMatcher(&LogLine{LineNumber: 17}, &Rule)
+	m := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
 
-	ams := []*matcher{expiredMatcher, closedMatcher, m}
+	ams := []*parseMatchCandidate{expiredMatcher, closedMatcher, m}
 
-	r := purgeInactiveMatchers(5, ams)
+	r := purgeInactiveMatchCandidates(5, ams)
 
 	if len(r) != 1 {
 		t.Fatalf("Expected 1 matcher got %v", len(r))
@@ -101,16 +101,16 @@ func TestPurgeInactiveMatchers(t *testing.T) {
 }
 
 func TestInitialCheckLine(t *testing.T) {
-	r1 := Rule{
+	r1 := MatchRule{
 		Name:   "match",
-		Checks: []LineMatcher{{Contains: "match"}},
+		Checks: []LineCheck{{Contains: "match"}},
 	}
-	r2 := Rule{
+	r2 := MatchRule{
 		Name:   "don't match",
-		Checks: []LineMatcher{{Contains: "don't match"}},
+		Checks: []LineCheck{{Contains: "don't match"}},
 	}
 
-	matchers := initialCheckLine(&LogLine{LineNumber: 1, Content: "match"}, []*Rule{&r1, &r2})
+	matchers := matchLineAgainstFirstChecks(&LogLine{LineNumber: 1, Content: "match"}, []*MatchRule{&r1, &r2})
 
 	if len(matchers) != 1 {
 		t.Fatalf("Expected 1 matcher got %v", len(matchers))
@@ -122,14 +122,14 @@ func TestInitialCheckLine(t *testing.T) {
 }
 
 func TestRunMatcher_ContextCancel(t *testing.T) {
-	Rule := Rule{Checks: []LineMatcher{{Contains: "match"}, {Contains: "error"}}}
+	Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "error"}}}
 	firstLog := LogLine{LineNumber: 1, Content: "match"}
-	m := newMatcher(&firstLog, &Rule)
+	m := createMatchCandidate(&firstLog, &Rule)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	matchChan := make(chan *ParseMatch)
 
-	go runMatcher(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
+	go runMatchCandidate(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
 
 	m.LineChannel <- &LogLine{LineNumber: 2, Content: "not"} // Send a log line to ensure
 
@@ -143,14 +143,14 @@ func TestRunMatcher_ContextCancel(t *testing.T) {
 }
 
 func TestRunMatcher_HandlesSingleCheck(t *testing.T) {
-	Rule := Rule{Checks: []LineMatcher{{Contains: "match"}}}
+	Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}}}
 	firstLog := LogLine{LineNumber: 1, Content: "match"}
-	m := newMatcher(&firstLog, &Rule)
+	m := createMatchCandidate(&firstLog, &Rule)
 
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go runMatcher(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
+	go runMatchCandidate(ctx, m, matchChan) // This matcher will be expecting another line to continue the checks
 
 	select {
 	case msg := <-matchChan:
@@ -177,14 +177,14 @@ func TestRunMatcher_HandlesSingleCheck(t *testing.T) {
 }
 
 func TestRunMatcher_HandlesMatchAndExit(t *testing.T) {
-	Rule := Rule{Checks: []LineMatcher{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 100}
+	Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 100}
 	firstLog := LogLine{LineNumber: 1, Content: "match"}
-	m := newMatcher(&firstLog, &Rule)
+	m := createMatchCandidate(&firstLog, &Rule)
 
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go runMatcher(ctx, m, matchChan)
+	go runMatchCandidate(ctx, m, matchChan)
 
 	// Spam some non matching lines
 	for i := range 97 {
@@ -224,14 +224,14 @@ func TestRunMatcher_HandlesMatchAndExit(t *testing.T) {
 }
 
 func TestRunMatcher_HandlesNoMatch(t *testing.T) {
-	Rule := Rule{Checks: []LineMatcher{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 100}
+	Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 100}
 	firstLog := LogLine{LineNumber: 1, Content: "match"}
-	m := newMatcher(&firstLog, &Rule)
+	m := createMatchCandidate(&firstLog, &Rule)
 
 	ctx := t.Context()
 	matchChan := make(chan *ParseMatch)
 
-	go runMatcher(ctx, m, matchChan)
+	go runMatchCandidate(ctx, m, matchChan)
 
 	// Spam some non matching lines
 	for i := range 99 {

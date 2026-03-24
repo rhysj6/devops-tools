@@ -8,22 +8,22 @@ import (
 func TestRuleGetNeededLineCount(t *testing.T) {
 	tests := []struct {
 		name     string
-		rule     Rule
+		rule     MatchRule
 		expected int
 	}{
 		{
 			name:     "Handles single check",
-			rule:     Rule{Checks: []LineMatcher{{Contains: "Hello?"}}, MaxLines: 100},
+			rule:     MatchRule{Checks: []LineCheck{{Contains: "Hello?"}}, MaxLines: 100},
 			expected: 1,
 		},
 		{
 			name:     "Handles more checks than limit",
-			rule:     Rule{Checks: []LineMatcher{{}}, MaxLines: 0},
+			rule:     MatchRule{Checks: []LineCheck{{}}, MaxLines: 0},
 			expected: 1,
 		},
 		{
 			name:     "Handles max lines",
-			rule:     Rule{Checks: []LineMatcher{{Contains: "Something"}, {Contains: "Something"}}, MaxLines: 17},
+			rule:     MatchRule{Checks: []LineCheck{{Contains: "Something"}, {Contains: "Something"}}, MaxLines: 17},
 			expected: 17,
 		},
 	}
@@ -52,42 +52,42 @@ func TestCheckLine(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		lm       LineMatcher
+		lm       LineCheck
 		expected bool
 	}{
 		{
 			name:     "Handle match contains with no regex",
-			lm:       LineMatcher{Contains: "ERROR"},
+			lm:       LineCheck{Contains: "ERROR"},
 			expected: true,
 		},
 		{
 			name:     "Handle no match contains with no regex",
-			lm:       LineMatcher{Contains: "INFO"},
+			lm:       LineCheck{Contains: "INFO"},
 			expected: false,
 		},
 		{
 			name:     "Handle match contains with regex",
-			lm:       LineMatcher{Contains: "ERROR", Regex: re1},
+			lm:       LineCheck{Contains: "ERROR", Regex: re1},
 			expected: true,
 		},
 		{
 			name:     "Handle no match contains with regex",
-			lm:       LineMatcher{Contains: "ERROR", Regex: re2},
+			lm:       LineCheck{Contains: "ERROR", Regex: re2},
 			expected: false,
 		},
 		{
 			name:     "Handle match regex only",
-			lm:       LineMatcher{Regex: re1},
+			lm:       LineCheck{Regex: re1},
 			expected: true,
 		},
 		{
 			name:     "Handle no match regex only",
-			lm:       LineMatcher{Regex: re2},
+			lm:       LineCheck{Regex: re2},
 			expected: false,
 		},
 		{
 			name:     "Handle no values ",
-			lm:       LineMatcher{},
+			lm:       LineCheck{},
 			expected: false,
 		},
 	}

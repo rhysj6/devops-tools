@@ -53,16 +53,16 @@ func TestParseFromSource(t *testing.T) {
 	})
 
 	t.Run("successfully parses logs when downstream logs are supported and only returns final log matches if there are any", func(t *testing.T) {
-		downstreamLogRule := &Rule{
-			Checks: []LineMatcher{{Contains: "downstream log line"}},
+		downstreamLogRule := &MatchRule{
+			Checks: []LineCheck{{Contains: "downstream log line"}},
 		}
-		finalLogRule := &Rule{
-			Checks: []LineMatcher{{Contains: "2nd level"}},
+		finalLogRule := &MatchRule{
+			Checks: []LineCheck{{Contains: "2nd level"}},
 		}
 
 		mockSource := &MockLogSource{
 			logs: io.NopCloser(strings.NewReader("line1\nline2\nline3\ndownstream log line\n")),
-			GetDownstreamErrorRuleFunc: func() *Rule {
+			GetDownstreamErrorRuleFunc: func() *MatchRule {
 				return downstreamLogRule
 			},
 			GetDownstreamErrorLogsFunc: func(pm *ParseMatch) (io.ReadCloser, error) {
@@ -74,7 +74,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		parser := NewLogParser(
-			WithRules([]*Rule{finalLogRule}),
+			WithRules([]*MatchRule{finalLogRule}),
 		)
 		matches, stats, err := parser.ParseFromSource(mockSource)
 
@@ -96,18 +96,18 @@ func TestParseFromSource(t *testing.T) {
 	})
 
 	t.Run("successfully parses logs when downstream logs are supported and returns downstream matches if there aren't any final log matches", func(t *testing.T) {
-		downstreamLogRule := &Rule{
-			Checks: []LineMatcher{{Contains: "downstream log line"}},
+		downstreamLogRule := &MatchRule{
+			Checks: []LineCheck{{Contains: "downstream log line"}},
 		}
-		finalLogRule := &Rule{
-			Checks: []LineMatcher{{Contains: "2nd level"}},
+		finalLogRule := &MatchRule{
+			Checks: []LineCheck{{Contains: "2nd level"}},
 		}
 
 		hasGetDownstreamErrorLogsFuncBeenCalled := false
 
 		mockSource := &MockLogSource{
 			logs: io.NopCloser(strings.NewReader("line1\nline2\nline3\ndownstream log line\n")),
-			GetDownstreamErrorRuleFunc: func() *Rule {
+			GetDownstreamErrorRuleFunc: func() *MatchRule {
 				return downstreamLogRule
 			},
 			GetDownstreamErrorLogsFunc: func(pm *ParseMatch) (io.ReadCloser, error) {
@@ -123,7 +123,7 @@ func TestParseFromSource(t *testing.T) {
 		}
 
 		parser := NewLogParser(
-			WithRules([]*Rule{finalLogRule}),
+			WithRules([]*MatchRule{finalLogRule}),
 		)
 		matches, stats, err := parser.ParseFromSource(mockSource)
 
@@ -164,7 +164,7 @@ type MockLogSource struct {
 	logs                       io.ReadCloser
 	getLogsErr                 error
 	closeCalled                bool
-	GetDownstreamErrorRuleFunc func() *Rule
+	GetDownstreamErrorRuleFunc func() *MatchRule
 	GetDownstreamErrorLogsFunc func(*ParseMatch) (io.ReadCloser, error)
 }
 
@@ -175,11 +175,11 @@ func (m *MockLogSource) GetLogs() (io.ReadCloser, error) {
 	return &mockReadCloser{Reader: m.logs, onClose: func() { m.closeCalled = true }}, nil
 }
 
-func (m *MockLogSource) GetDownstreamErrorRule() *Rule {
+func (m *MockLogSource) GetDownstreamErrorRule() *MatchRule {
 	if m.GetDownstreamErrorRuleFunc != nil {
 		return m.GetDownstreamErrorRuleFunc()
 	}
-	return &Rule{Checks: []LineMatcher{{Contains: "NEVEREVERMATCH"}}}
+	return &MatchRule{Checks: []LineCheck{{Contains: "NEVEREVERMATCH"}}}
 }
 
 func (m *MockLogSource) GetDownstreamErrorLogs(pm *ParseMatch) (io.ReadCloser, error) {

@@ -6,10 +6,10 @@ import (
 )
 
 type Config struct {
-	Rules         []*Rule `mapstructure:"rules"`
-	Output        string  `mapstructure:"output"`
-	MaxMatches    int     `mapstructure:"maxmatches"`
-	MaxLineSizeKB int     `mapstructure:"maxlinesizekb"`
+	MatchRules    []*MatchRule `mapstructure:"rules"`
+	Output        string       `mapstructure:"output"`
+	MaxMatches    int          `mapstructure:"maxmatches"`
+	MaxLineSizeKB int          `mapstructure:"maxlinesizekb"`
 }
 
 func (c *Config) ApplyDefaults() error {
@@ -36,14 +36,14 @@ func (c *Config) ApplyDefaults() error {
 }
 
 func (c *Config) CompileRegex() error {
-	for i := range c.Rules {
-		for j := range c.Rules[i].Checks {
-			if c.Rules[i].Checks[j].RegexText != "" {
-				rg, err := regexp.Compile(c.Rules[i].Checks[j].RegexText)
+	for i := range c.MatchRules {
+		for j := range c.MatchRules[i].Checks {
+			if c.MatchRules[i].Checks[j].RegexText != "" {
+				rg, err := regexp.Compile(c.MatchRules[i].Checks[j].RegexText)
 				if err != nil {
 					return err
 				}
-				c.Rules[i].Checks[j].Regex = rg
+				c.MatchRules[i].Checks[j].Regex = rg
 			}
 		}
 	}
@@ -56,7 +56,7 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
 	}
-	for i, r := range c.Rules {
+	for i, r := range c.MatchRules {
 		if len(r.Checks) == 0 {
 			return fmt.Errorf("rule %d (%q) has 0 checks", i, r.Name)
 		} else {
