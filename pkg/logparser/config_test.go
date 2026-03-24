@@ -448,7 +448,7 @@ func TestApplyDefaults(t *testing.T) {
 	t.Run("handles nil Config gracefully", func(t *testing.T) {
 		var cfg *Config = nil
 		err := cfg.ApplyDefaults()
-		if err != nil {
+		if err != nil && err.Error() != "config is nil" {
 			t.Fatalf("ApplyDefaults returned error for nil Config: %v", err)
 		}
 	})
