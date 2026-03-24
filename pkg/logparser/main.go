@@ -117,7 +117,7 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 	}
 
 	// Recursively parse downstream logs if we find a potential downstream failure mention, up to the maximum recursion depth specified by the RecursiveLogSource implementation or 3.
-	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
+	for range min(recursiveSource.GetMaxRecursionDepth(), 3) {
 		// Only checks for downstream errors if no other matches were found.
 		if len(matches) == 1 && matches[0].Rule == downstreamErrorRule {
 			lp.logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
