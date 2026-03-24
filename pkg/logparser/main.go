@@ -64,7 +64,7 @@ func WithMaxLineSizeKB(size int) ParserOption {
 	}
 }
 
-// Create a new LogParser with the provided options. If no logger is provided, a default logger that discards output will be used. If no context is provided, context.Background() will be used.
+// NewLogParser creates a new LogParser with the provided options. If no logger is provided, a default logger that discards output will be used. If no context is provided, context.Background() will be used.
 func NewLogParser(opts ...ParserOption) *LogParser {
 	lp := &LogParser{
 		Rules:         []*MatchRule{},
@@ -88,7 +88,7 @@ func NewLogParser(opts ...ParserOption) *LogParser {
 
 // ParseFromSource parses logs from a LogSource and applies optional recursive
 // parsing when the source implements RecursiveLogSource.
-// Recieves the value of the LogParser as a non-pointer to ensure that the original LogParser's rules are not modified when appending the downstream error rule for recursive parsing.
+// Receives the value of the LogParser as a non-pointer to ensure that the original LogParser's rules are not modified when appending the downstream error rule for recursive parsing.
 func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, error) {
 	startTime := time.Now()
 	logs, err := source.GetLogs()

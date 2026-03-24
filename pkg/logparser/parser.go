@@ -11,6 +11,8 @@ type ParseMatch struct {
 	MatchedLines []*LogLine `json:"matchedLines"`
 }
 
+// parseMatchCandidate represents a potential match that is currently being evaluated. It holds the state needed to evaluate the match and communicate with the main parsing loop.
+// It has a receiver channel for new lines to check against the rule, and a done channel to signal when the match evaluation is complete. The main parsing loop will manage the lifecycle of these candidates, including purging inactive ones and broadcasting new lines to them.
 type parseMatchCandidate struct {
 	Rule            *MatchRule
 	FirstLine       *LogLine
