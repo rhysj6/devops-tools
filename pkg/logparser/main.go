@@ -98,8 +98,10 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 
 	recursiveSource, isRecursiveLogSource := source.(RecursiveLogSource) // If the source does not support downstream error logs, we can just parse the logs once and return the results.
 
+	var downstreamErrorRule *MatchRule
 	if isRecursiveLogSource {
-		lp.Rules = append(lp.Rules, recursiveSource.GetDownstreamErrorRule())
+		downstreamErrorRule = recursiveSource.GetDownstreamErrorRule()
+		lp.Rules = append(lp.Rules, downstreamErrorRule)
 	}
 	// Initial parse of the logs from the source
 	matches, stats, err := lp.Parse(logs)
@@ -117,7 +119,7 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 	// Recursively parse downstream logs if we find a potential downstream failure mention, up to the maximum recursion depth specified by the RecursiveLogSource implementation or 3.
 	for range max(recursiveSource.GetMaxRecursionDepth(), 3) {
 		// Only checks for downstream errors if no other matches were found.
-		if len(matches) == 1 && matches[0].Rule == recursiveSource.GetDownstreamErrorRule() {
+		if len(matches) == 1 && matches[0].Rule == downstreamErrorRule {
 			lp.logger.Info("found potential downstream failure mention, attempting to get downstream logs", slog.String("content", matches[0].MatchedLines[0].Content))
 
 			downstreamLogs, err := recursiveSource.GetDownstreamErrorLogs(matches[0])
@@ -146,7 +148,7 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 	// Remove any matches that are for the downstream error rule, as these are not relevant if there are other matches found in the logs.
 	customMatches := []*ParseMatch{}
 	for _, m := range matches {
-		if m.Rule != recursiveSource.GetDownstreamErrorRule() {
+		if m.Rule != downstreamErrorRule {
 			customMatches = append(customMatches, m)
 		}
 	}
