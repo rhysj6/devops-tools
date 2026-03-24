@@ -13,23 +13,24 @@ type Config struct {
 }
 
 func (c *Config) ApplyDefaults() error {
-	if c != nil {
-		err := c.CompileRegex()
-		if err != nil {
-			return err
-		}
+	if c == nil {
+		return fmt.Errorf("config is nil")
+	}
+	err := c.CompileRegex()
+	if err != nil {
+		return err
+	}
 
-		if c.Output == "" {
-			c.Output = "text"
-		}
+	if c.Output == "" {
+		c.Output = "text"
+	}
 
-		if c.MaxMatches == 0 {
-			c.MaxMatches = 1
-		}
+	if c.MaxMatches == 0 {
+		c.MaxMatches = 1
+	}
 
-		if c.MaxLineSizeKB == 0 {
-			c.MaxLineSizeKB = 4
-		}
+	if c.MaxLineSizeKB == 0 {
+		c.MaxLineSizeKB = 4
 	}
 
 	return nil
@@ -54,6 +55,8 @@ func (c *Config) CompileRegex() error {
 	return nil
 }
 
+// Validate checks that all rules are well-formed. It compiles regex patterns
+// as part of validation to catch any invalid regex syntax.
 func (c *Config) Validate() error {
 	if c == nil {
 		return fmt.Errorf("config is nil")
