@@ -110,6 +110,11 @@ func runMatchCandidate(ctx context.Context, m *parseMatchCandidate, mc chan *Par
 	matchedLines := []*LogLine{m.FirstLine}
 	checkIndex := 1 // Already matched the first line
 
+	// Determine the initial maximum line number to check based on the first check's MaxLines or the rule's MaxLines
+	runningMaxLine := m.FinalLineNumber
+	if checkIndex < len(m.Rule.Checks) && m.Rule.Checks[checkIndex].MaxLines > 0 {
+		runningMaxLine = m.FirstLine.LineNumber + m.Rule.Checks[checkIndex].MaxLines
+	}
 	for {
 		if checkIndex >= len(m.Rule.Checks) {
 			mc <- &ParseMatch{
@@ -117,22 +122,26 @@ func runMatchCandidate(ctx context.Context, m *parseMatchCandidate, mc chan *Par
 				MatchedLines: matchedLines,
 			}
 			return
-		} else if matchedLines[len(matchedLines)-1].LineNumber >= m.FinalLineNumber {
-			return // The last line checked was the final line to check, no matches found
 		}
 		select {
 		case line, ok := <-m.LineChannel:
 			if !ok {
-				return // Channel has closed
+				return // Channel has closed and there are no more lines to check
 			}
 			matchedLines = append(matchedLines, line)
 
 			if m.Rule.Checks[checkIndex].CheckLine(line.Content) {
 				checkIndex++
+				if checkIndex < len(m.Rule.Checks) && m.Rule.Checks[checkIndex].MaxLines > 0 {
+					runningMaxLine = line.LineNumber + m.Rule.Checks[checkIndex].MaxLines
+				} else {
+					runningMaxLine = m.FinalLineNumber
+				}
+			} else if line.LineNumber >= runningMaxLine {
+				return
 			}
 		case <-ctx.Done():
 			return
 		}
-
 	}
 }

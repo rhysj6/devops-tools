@@ -207,7 +207,7 @@ func TestRunMatcher_HandlesMatchAndExit(t *testing.T) {
 		} else if msg.MatchedLines[0] != &firstLog {
 			t.Fatalf("Expected log: %v instead got %v", firstLog.Content, msg.MatchedLines[0].Content)
 		} else if msg.MatchedLines[len(msg.MatchedLines)-1] != &finalLog {
-			t.Fatalf("Expected log: %v instead got %v", firstLog.Content, msg.MatchedLines[len(msg.MatchedLines)-1].Content)
+			t.Fatalf("Expected log: %v instead got %v", finalLog.Content, msg.MatchedLines[len(msg.MatchedLines)-1].Content)
 		} else if msg.Rule != &Rule {
 			t.Fatal("ParseMatch Rule doesn't match Rule")
 		}
@@ -224,33 +224,80 @@ func TestRunMatcher_HandlesMatchAndExit(t *testing.T) {
 }
 
 func TestRunMatcher_HandlesNoMatch(t *testing.T) {
-	Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 100}
-	firstLog := LogLine{LineNumber: 1, Content: "match"}
-	m := createMatchCandidate(&firstLog, &Rule)
+	t.Run("handle maxlines for rule", func(t *testing.T) {
+		Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "definitely an error"}}, MaxLines: 10}
+		firstLog := LogLine{LineNumber: 1, Content: "match"}
+		m := createMatchCandidate(&firstLog, &Rule)
 
-	ctx := t.Context()
-	matchChan := make(chan *ParseMatch)
+		ctx := t.Context()
+		matchChan := make(chan *ParseMatch)
 
-	go runMatchCandidate(ctx, m, matchChan)
+		go runMatchCandidate(ctx, m, matchChan)
 
-	// Spam some non matching lines
-	for i := range 99 {
-		m.LineChannel <- &LogLine{
-			LineNumber: i + 2,
-			Content:    "This won't match the Rules and is there for fun",
+		// Spam some non matching lines
+		for i := range 9 {
+			m.LineChannel <- &LogLine{
+				LineNumber: i + 2,
+				Content:    "This won't match the Rules and is there for fun",
+			}
 		}
-	}
 
-	select {
-	case <-m.DoneChannel:
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("RunMatcher did not exit in time")
-	}
+		select {
+		case <-m.DoneChannel:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("RunMatcher did not exit in time")
+		}
 
-	select {
-	case msg := <-matchChan:
-		t.Fatalf("Unexpected parse match: %+v", msg)
-	default:
-		// No message as expected
-	}
+		select {
+		case msg := <-matchChan:
+			t.Fatalf("Unexpected parse match: %+v", msg)
+		default:
+			// No message as expected
+		}
+	})
+
+	t.Run("handle line check maxlines", func(t *testing.T) {
+		Rule := MatchRule{Checks: []LineCheck{{Contains: "match"}, {Contains: "definitely an error", MaxLines: 1}}, MaxLines: 15}
+		firstLog := LogLine{LineNumber: 1, Content: "match"}
+		m := createMatchCandidate(&firstLog, &Rule)
+
+		ctx := t.Context()
+		matchChan := make(chan *ParseMatch, 1) // Buffer of 1 to ensure that if an unexpected match is sent, it doesn't block the test from finishing
+
+		go runMatchCandidate(ctx, m, matchChan)
+
+		// Spam some non matching lines
+		for i := range 8 {
+			m.LineChannel <- &LogLine{
+				LineNumber: i + 2,
+				Content:    "This won't match the Rules and is there for fun",
+			}
+		}
+
+		// This line matches the second check but is outside of the maxlines for that check
+		m.LineChannel <- &LogLine{
+			LineNumber: 10,
+			Content:    "definitely an error",
+		}
+
+		for i := range 5 {
+			m.LineChannel <- &LogLine{
+				LineNumber: i + 11,
+				Content:    "This won't match the Rules and is there for fun",
+			}
+		}
+
+		select {
+		case <-m.DoneChannel:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("RunMatcher did not exit in time")
+		}
+
+		select {
+		case msg := <-matchChan:
+			t.Fatalf("Unexpected parse match: %+v", msg)
+		default:
+			// No message as expected
+		}
+	})
 }

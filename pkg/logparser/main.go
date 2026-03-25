@@ -166,22 +166,35 @@ func (lp LogParser) ParseFromSource(source LogSource) ([]*ParseMatch, Stats, err
 // Parse scans a log stream line by line and returns all completed matches.
 func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 	ctx, cancel := context.WithCancel(lp.ctx)
+
+	// activeMatchers holds all matchers that are currently running and have not yet completed.
+	activeMatchers := []*parseMatchCandidate{}
+
 	// Close the reader when we're done parsing, and cancel the context to stop any ongoing matcher goroutines.
-	defer func() { _ = r.Close() }()
+	defer func() {
+		_ = r.Close()
+		// Close all matcher channels to signal them to stop, and wait for them to finish.
+		for _, m := range activeMatchers {
+			close(m.LineChannel)
+		}
+		for _, m := range activeMatchers {
+			select {
+			case <-m.DoneChannel:
+			case <-time.After(5 * time.Second):
+				lp.logger.Error("matcher did not exit in time", slog.String("rule", m.Rule.Name))
+			}
+		}
+	}()
 	defer cancel()
 
 	stats := Stats{}
 	reader := bufio.NewReaderSize(r, lp.MaxLineSizeKB*1024)
 
-	// activeMatchers holds all matchers that are currently running and have not yet completed.
-	activeMatchers := []*parseMatchCandidate{}
 	matches := []*ParseMatch{}
 
 	// matchChan is used to receive completed matches from the matcher goroutines.
 	matchChan := make(chan *ParseMatch, 100)
 	defer close(matchChan)
-
-	var rtnErr error = nil
 
 	lineNo := 0
 	for {
@@ -197,16 +210,12 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 			// Discard the rest of the line
 			_, err := reader.ReadString('\n')
 			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
-				rtnErr = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
-				cancel()
-				break
+				return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 			}
 			continue
 
 		} else if err != nil && err != io.EOF {
-			rtnErr = fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
-			cancel()
-			break
+			return nil, stats, fmt.Errorf("reader error: %w \n Log line number: %v", err, lineNo)
 		}
 
 		line := &LogLine{
@@ -237,7 +246,11 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 
 	// Wait for any remaining matchers to finish
 	for _, m := range activeMatchers {
-		<-m.DoneChannel
+		select {
+		case <-m.DoneChannel:
+		case <-time.After(5 * time.Second):
+			lp.logger.Error("matcher did not exit in time", slog.String("rule", m.Rule.Name))
+		}
 	}
 	matches = append(matches, getNewParseMatches(matchChan)...)
 
@@ -249,5 +262,9 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 		matches = matches[:lp.MaxMatches]
 	}
 
-	return matches, stats, rtnErr
+	if ctx.Err() != nil && len(matches) == 0 {
+		return matches, stats, fmt.Errorf("parsing cancelled: %w", ctx.Err())
+	}
+
+	return matches, stats, nil
 }
