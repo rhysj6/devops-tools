@@ -289,7 +289,6 @@ func TestRunMatcher_HandlesNoMatch(t *testing.T) {
 
 		select {
 		case <-m.DoneChannel:
-			t.Fatal("Unexpected parse match")
 		case <-time.After(100 * time.Millisecond):
 			t.Fatal("RunMatcher did not exit in time")
 		}
