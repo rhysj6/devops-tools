@@ -56,8 +56,13 @@ func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
 	Rule := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}} // Rule with at least 1 check so line channel has a buffer
 	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
 	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	m3 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
 
-	matchers := []*parseMatchCandidate{m1, m2}
+	// Close the line channel for m3 to simulate a matcher that has received all its lines. This will panic if broadcastLogLine tries to send to it, which is what we want to test against.
+	close(m3.LineChannel)
+	m3.AllLinesReceived = true
+
+	matchers := []*parseMatchCandidate{m1, m2, m3}
 
 	broadcastLogLine(&LogLine{Content: "Hi"}, matchers)
 
