@@ -14,12 +14,12 @@ type ParseMatch struct {
 // parseMatchCandidate represents a potential match that is currently being evaluated. It holds the state needed to evaluate the match and communicate with the main parsing loop.
 // It has a receiver channel for new lines to check against the rule, and a done channel to signal when the match evaluation is complete. The main parsing loop will manage the lifecycle of these candidates, including purging inactive ones and broadcasting new lines to them.
 type parseMatchCandidate struct {
-	Rule             *MatchRule
-	FirstLine        *LogLine
-	FinalLineNumber  int
-	LineChannel      chan *LogLine // Used for adding new log lines
-	AllLinesReceived bool          // Indicates if all lines have been received for this candidate
-	DoneChannel      chan struct{} // Used to signal that matcher finished
+	Rule            *MatchRule
+	FirstLine       *LogLine
+	FinalLineNumber int
+	LineChannel     chan *LogLine // Used for adding new log lines
+	AcceptingLines  bool          // Indicates if all lines have been received for this candidate
+	DoneChannel     chan struct{} // Used to signal that matcher finished
 }
 
 // LogLine is a single parsed line and its 1-based position in the source.
@@ -64,7 +64,12 @@ func purgeInactiveMatchCandidates(lineNumber int, matcherCandidates []*parseMatc
 
 func broadcastLogLine(line *LogLine, matchers []*parseMatchCandidate) {
 	for _, m := range matchers {
-		m.LineChannel <- line
+		if m.AcceptingLines && line.LineNumber <= m.FinalLineNumber {
+			m.LineChannel <- line
+		} else if m.AcceptingLines && line.LineNumber > m.FinalLineNumber {
+			close(m.LineChannel) // Reached maximum lines
+			m.AcceptingLines = false
+		}
 	}
 }
 

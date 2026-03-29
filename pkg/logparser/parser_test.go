@@ -53,29 +53,45 @@ func TestNewMatcher(t *testing.T) {
 }
 
 func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
-	Rule := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}} // Rule with at least 1 check so line channel has a buffer
-	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
-	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
-	m3 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	r1 := MatchRule{Checks: []LineCheck{{Contains: "Hi"}, {Contains: "Hello"}}}
+	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &r1)
+	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &r1)
+
+	// These matchers will be testing the final line number logic.
+	r2 := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}, MaxLines: 1}
+	m3 := createMatchCandidate(&LogLine{LineNumber: 1}, &r2)
+	m4 := createMatchCandidate(&LogLine{LineNumber: 1}, &r2)
 
 	// Close the line channel for m3 to simulate a matcher that has received all its lines. This will panic if broadcastLogLine tries to send to it, which is what we want to test against.
 	close(m3.LineChannel)
-	m3.AllLinesReceived = true
+	m3.AcceptingLines = false
 
-	matchers := []*parseMatchCandidate{m1, m2, m3}
+	matchers := []*parseMatchCandidate{m1, m2, m3, m4}
 
-	broadcastLogLine(&LogLine{Content: "Hi"}, matchers)
+	broadcastLogLine(&LogLine{Content: "Hi", LineNumber: 2}, matchers)
 
-	for range 2 {
+	if m4.AcceptingLines != false {
+		t.Fatal("Matcher should have AcceptingLines set to false after reaching FinalLineNumber")
+	}
+
+	for range 3 {
 		select {
-		case msg := <-m1.LineChannel:
-			if msg.Content != "Hi" {
+		case msg, ok := <-m1.LineChannel:
+			if !ok {
+				t.Fatal("Channel was closed when it should be open")
+			} else if msg.Content != "Hi" {
 				t.Fatalf("Expected message Hi got %v", msg.Content)
 			}
 
-		case msg := <-m2.LineChannel:
-			if msg.Content != "Hi" {
+		case msg, ok := <-m2.LineChannel:
+			if !ok {
+				t.Fatal("Channel was closed when it should be open")
+			} else if msg.Content != "Hi" {
 				t.Fatalf("Expected message Hi got %v", msg.Content)
+			}
+		case _, ok := <-m4.LineChannel:
+			if ok {
+				t.Fatal("Channel was open when it should be closed after reaching FinalLineNumber")
 			}
 		default:
 			t.Fatalf("Expected 2 messages on both channels, defaulted instead.")
