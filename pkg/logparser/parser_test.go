@@ -101,36 +101,42 @@ func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
 }
 
 func TestPurgeInactiveMatchers(t *testing.T) {
-	Rule := MatchRule{
-		MaxLines: 2,
-		Checks: []LineCheck{
-			{Contains: "Hi"},
-			{Contains: "Hello"},
-		},
-	} // Rule with MaxLines so that we can test purging based on line number
+	Rule := MatchRule{}
 
-	// Expired because first line number is 1 and current line number is 5
-	expiredMatcher := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
-
+	// This matcher will have a closed line and done channel, simulating a matcher that has completed.
 	closedMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
 	close(closedMatcher.DoneChannel)
+	close(closedMatcher.LineChannel)
+	closedMatcher.AcceptingLines = false
+
+	// earlyFinishMatcher will have a closed done channel but an open line channel, simulating a matcher that has been signaled to stop but hasn't finished yet
+	// or a matcher that has matched before the final line was reached and is no longer accepting lines but hasn't been purged yet.
+	earlyFinishMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
+	close(earlyFinishMatcher.DoneChannel)
 
 	m := createMatchCandidate(&LogLine{LineNumber: 3}, &Rule)
 
-	ams := []*parseMatchCandidate{expiredMatcher, closedMatcher, m}
+	ams := []*parseMatchCandidate{earlyFinishMatcher, closedMatcher, m}
 
-	r := purgeInactiveMatchCandidates(4, ams)
+	r := purgeInactiveMatchCandidates(ams)
 
-	if len(r) != 2 {
-		t.Fatalf("Expected 2 matchers got %v", len(r))
+	if len(r) != 1 {
+		t.Fatalf("Expected 1 matchers got %v", len(r))
 	}
-	if r[0] != expiredMatcher {
-		t.Fatalf("Matcher is not correct, should be expiredMatcher")
-	} else if r[0].AllLinesReceived == false {
-		t.Fatal("Expired matcher should have AllLinesReceived set to true")
-	}
-	if r[1] != m {
+	if r[0] != m {
 		t.Fatalf("Matcher is not correct, should be matcher")
+	}
+
+	if earlyFinishMatcher.AcceptingLines != false {
+		t.Fatal("Expected earlyFinishMatcher to have AcceptingLines set to false")
+	}
+	select {
+	case _, ok := <-earlyFinishMatcher.LineChannel:
+		if ok {
+			t.Fatal("Expected earlyFinishMatcher LineChannel to be closed")
+		}
+	default:
+		t.Fatal("Expected to select on earlyFinishMatcher LineChannel")
 	}
 }
 

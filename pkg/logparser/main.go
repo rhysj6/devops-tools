@@ -223,7 +223,7 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 			LineNumber: lineNo,
 		}
 
-		activeMatchers = purgeInactiveMatchCandidates(lineNo, activeMatchers)
+		activeMatchers = purgeInactiveMatchCandidates(activeMatchers)
 		broadcastLogLine(line, activeMatchers)
 
 		pendingMatchers := matchLineAgainstFirstChecks(line, lp.Rules)
