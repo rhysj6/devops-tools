@@ -80,22 +80,35 @@ func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
 }
 
 func TestPurgeInactiveMatchers(t *testing.T) {
-	Rule := MatchRule{}
+	Rule := MatchRule{
+		MaxLines: 2,
+		Checks: []LineCheck{
+			{Contains: "Hi"},
+			{Contains: "Hello"},
+		},
+	} // Rule with MaxLines so that we can test purging based on line number
 
+	// Expired because first line number is 1 and current line number is 5
 	expiredMatcher := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+
 	closedMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
 	close(closedMatcher.DoneChannel)
-	m := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
+
+	m := createMatchCandidate(&LogLine{LineNumber: 3}, &Rule)
 
 	ams := []*parseMatchCandidate{expiredMatcher, closedMatcher, m}
 
-	r := purgeInactiveMatchCandidates(5, ams)
+	r := purgeInactiveMatchCandidates(4, ams)
 
-	if len(r) != 1 {
-		t.Fatalf("Expected 1 matcher got %v", len(r))
+	if len(r) != 2 {
+		t.Fatalf("Expected 2 matchers got %v", len(r))
 	}
-
-	if r[0] != m {
+	if r[0] != expiredMatcher {
+		t.Fatalf("Matcher is not correct, should be expiredMatcher")
+	} else if r[0].AllLinesReceived == false {
+		t.Fatal("Expired matcher should have AllLinesReceived set to true")
+	}
+	if r[1] != m {
 		t.Fatalf("Matcher is not correct, should be matcher")
 	}
 }
