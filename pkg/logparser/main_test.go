@@ -3,6 +3,7 @@ package logparser
 import (
 	"errors"
 	"io"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -234,6 +235,46 @@ func TestParse(t *testing.T) {
 
 		if len(matches) != 0 {
 			t.Fatalf("Expected 0 matches, got %d", len(matches))
+		}
+	})
+
+	t.Run("doesn't read more lines than necessary", func(t *testing.T) {
+		// This test checks that the parser effiently parses even when running on a single core by ensuring that it blocks processing more lines
+		// once a match candidate has been sent all it's lines, as at this point it should be able to parse the lines it's been sent.
+		// otherwise it will read through all the lines before processing any matches, which is inefficient.
+
+		// Set the test to run on 1 core to increase the likelihood of this test catching inefficiencies in the parser.
+		runtime.GOMAXPROCS(1)
+		defer runtime.GOMAXPROCS(runtime.NumCPU())
+
+		matching := strings.Repeat("match line \n double line \n", 2)
+		notMatching := strings.Repeat("test line\n", 100)
+
+		reader := io.NopCloser(strings.NewReader(matching + notMatching))
+
+		rule := &MatchRule{
+			Checks: []LineCheck{
+				{Contains: "match line"},
+				{Contains: "double line"},
+			},
+			MaxLines: 2,
+		}
+
+		parser := NewLogParser(
+			WithRules([]*MatchRule{rule}),
+			WithMaxMatches(2),
+		)
+		matches, stats, err := parser.Parse(reader)
+		if err != nil {
+			t.Fatalf("Parse returned error: %v", err)
+		}
+
+		if stats.LinesParsed > 4 {
+			t.Fatalf("Expected early exit, parsed %d lines", stats.LinesParsed)
+		}
+
+		if len(matches) != 2 {
+			t.Fatalf("Expected 2 matches to be collected, got %d", len(matches))
 		}
 	})
 
