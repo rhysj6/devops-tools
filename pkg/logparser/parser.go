@@ -18,6 +18,7 @@ type parseMatchCandidate struct {
 	FirstLine       *LogLine
 	FinalLineNumber int
 	LineChannel     chan *LogLine // Used for adding new log lines
+	AcceptingLines  bool          // Indicates if all lines have been received for this candidate
 	DoneChannel     chan struct{} // Used to signal that matcher finished
 }
 
@@ -39,18 +40,17 @@ func getNewParseMatches(c <-chan *ParseMatch) []*ParseMatch {
 	}
 }
 
-func purgeInactiveMatchCandidates(lineNumber int, matcherCandidates []*parseMatchCandidate) []*parseMatchCandidate {
+func purgeInactiveMatchCandidates(matcherCandidates []*parseMatchCandidate) []*parseMatchCandidate {
 	activeMatchers := []*parseMatchCandidate{}
 
 	for _, m := range matcherCandidates {
-		if lineNumber > m.FinalLineNumber {
-			close(m.LineChannel) // Reached maximum lines
-			continue
-		}
 		// If the matcher is done, don't add it to the active matchers list and close its channel.
 		select {
 		case <-m.DoneChannel:
-			close(m.LineChannel) // Matcher is done
+			if m.AcceptingLines {
+				close(m.LineChannel) // Ensure the line channel is closed if the matcher is done but still accepting lines
+				m.AcceptingLines = false
+			}
 			continue
 		default:
 			activeMatchers = append(activeMatchers, m)
@@ -62,7 +62,12 @@ func purgeInactiveMatchCandidates(lineNumber int, matcherCandidates []*parseMatc
 
 func broadcastLogLine(line *LogLine, matchers []*parseMatchCandidate) {
 	for _, m := range matchers {
-		m.LineChannel <- line
+		if m.AcceptingLines && line.LineNumber <= m.FinalLineNumber {
+			m.LineChannel <- line
+		} else if m.AcceptingLines && line.LineNumber > m.FinalLineNumber {
+			close(m.LineChannel) // Reached maximum lines
+			m.AcceptingLines = false
+		}
 	}
 }
 
@@ -98,6 +103,7 @@ func matchLineAgainstFirstChecks(line *LogLine, rules []*MatchRule) []*parseMatc
 func createMatchCandidate(firstLine *LogLine, rule *MatchRule) *parseMatchCandidate {
 	return &parseMatchCandidate{
 		LineChannel:     make(chan *LogLine, rule.getNeededLineCount()),
+		AcceptingLines:  true,
 		DoneChannel:     make(chan struct{}),
 		Rule:            rule,
 		FirstLine:       firstLine,

@@ -53,24 +53,45 @@ func TestNewMatcher(t *testing.T) {
 }
 
 func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
-	Rule := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}} // Rule with at least 1 check so line channel has a buffer
-	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
-	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	r1 := MatchRule{Checks: []LineCheck{{Contains: "Hi"}, {Contains: "Hello"}}}
+	m1 := createMatchCandidate(&LogLine{LineNumber: 1}, &r1)
+	m2 := createMatchCandidate(&LogLine{LineNumber: 1}, &r1)
 
-	matchers := []*parseMatchCandidate{m1, m2}
+	// These matchers will be testing the final line number logic.
+	r2 := MatchRule{Checks: []LineCheck{{Contains: "Hi"}}, MaxLines: 1}
+	m3 := createMatchCandidate(&LogLine{LineNumber: 1}, &r2)
+	m4 := createMatchCandidate(&LogLine{LineNumber: 1}, &r2)
 
-	broadcastLogLine(&LogLine{Content: "Hi"}, matchers)
+	// Close the line channel for m3 to simulate a matcher that has received all its lines. This will panic if broadcastLogLine tries to send to it, which is what we want to test against.
+	close(m3.LineChannel)
+	m3.AcceptingLines = false
 
-	for range 2 {
+	matchers := []*parseMatchCandidate{m1, m2, m3, m4}
+
+	broadcastLogLine(&LogLine{Content: "Hi", LineNumber: 2}, matchers)
+
+	if m4.AcceptingLines != false {
+		t.Fatal("Matcher should have AcceptingLines set to false after reaching FinalLineNumber")
+	}
+
+	for range 3 {
 		select {
-		case msg := <-m1.LineChannel:
-			if msg.Content != "Hi" {
+		case msg, ok := <-m1.LineChannel:
+			if !ok {
+				t.Fatal("Channel was closed when it should be open")
+			} else if msg.Content != "Hi" {
 				t.Fatalf("Expected message Hi got %v", msg.Content)
 			}
 
-		case msg := <-m2.LineChannel:
-			if msg.Content != "Hi" {
+		case msg, ok := <-m2.LineChannel:
+			if !ok {
+				t.Fatal("Channel was closed when it should be open")
+			} else if msg.Content != "Hi" {
 				t.Fatalf("Expected message Hi got %v", msg.Content)
+			}
+		case _, ok := <-m4.LineChannel:
+			if ok {
+				t.Fatal("Channel was open when it should be closed after reaching FinalLineNumber")
 			}
 		default:
 			t.Fatalf("Expected 2 messages on both channels, defaulted instead.")
@@ -82,21 +103,40 @@ func TestBroadcastLogLine_BroadcastsToActiveChannels(t *testing.T) {
 func TestPurgeInactiveMatchers(t *testing.T) {
 	Rule := MatchRule{}
 
-	expiredMatcher := createMatchCandidate(&LogLine{LineNumber: 1}, &Rule)
+	// This matcher will have a closed line and done channel, simulating a matcher that has completed.
 	closedMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
 	close(closedMatcher.DoneChannel)
-	m := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
+	close(closedMatcher.LineChannel)
+	closedMatcher.AcceptingLines = false
 
-	ams := []*parseMatchCandidate{expiredMatcher, closedMatcher, m}
+	// earlyFinishMatcher will have a closed done channel but an open line channel, simulating a matcher that has been signaled to stop but hasn't finished yet
+	// or a matcher that has matched before the final line was reached and is no longer accepting lines but hasn't been purged yet.
+	earlyFinishMatcher := createMatchCandidate(&LogLine{LineNumber: 17}, &Rule)
+	close(earlyFinishMatcher.DoneChannel)
 
-	r := purgeInactiveMatchCandidates(5, ams)
+	m := createMatchCandidate(&LogLine{LineNumber: 3}, &Rule)
+
+	ams := []*parseMatchCandidate{earlyFinishMatcher, closedMatcher, m}
+
+	r := purgeInactiveMatchCandidates(ams)
 
 	if len(r) != 1 {
-		t.Fatalf("Expected 1 matcher got %v", len(r))
+		t.Fatalf("Expected 1 matchers got %v", len(r))
 	}
-
 	if r[0] != m {
 		t.Fatalf("Matcher is not correct, should be matcher")
+	}
+
+	if earlyFinishMatcher.AcceptingLines != false {
+		t.Fatal("Expected earlyFinishMatcher to have AcceptingLines set to false")
+	}
+	select {
+	case _, ok := <-earlyFinishMatcher.LineChannel:
+		if ok {
+			t.Fatal("Expected earlyFinishMatcher LineChannel to be closed")
+		}
+	default:
+		t.Fatal("Expected to select on earlyFinishMatcher LineChannel")
 	}
 }
 
