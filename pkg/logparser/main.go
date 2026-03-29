@@ -175,7 +175,9 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 		_ = r.Close()
 		// Close all matcher channels to signal them to stop, and wait for them to finish.
 		for _, m := range activeMatchers {
-			close(m.LineChannel)
+			if m.AcceptingLines {
+				close(m.LineChannel)
+			}
 		}
 		for _, m := range activeMatchers {
 			select {
@@ -234,10 +236,22 @@ func (lp LogParser) Parse(r io.ReadCloser) ([]*ParseMatch, Stats, error) {
 		stats.PartialMatches = stats.PartialMatches + len(pendingMatchers)
 
 		activeMatchers = append(activeMatchers, pendingMatchers...)
+
+		// Wait for any matchers that are no longer accepting lines to finish and collect their matches.
+		for _, m := range activeMatchers {
+			if !m.AcceptingLines {
+				select {
+				case <-m.DoneChannel:
+				case <-time.After(5 * time.Second):
+					lp.logger.Error("matcher did not exit in time", slog.String("rule", m.Rule.Name))
+				}
+			}
+		}
+
 		newMatches := getNewParseMatches(matchChan)
 		if len(newMatches) > 0 {
 			matches = append(matches, newMatches...)
-			if len(matches) > lp.MaxMatches {
+			if len(matches) >= lp.MaxMatches {
 				cancel()
 				break
 			}

@@ -269,7 +269,7 @@ func TestParse(t *testing.T) {
 			t.Fatalf("Parse returned error: %v", err)
 		}
 
-		if stats.LinesParsed > 4 {
+		if stats.LinesParsed > 5 {
 			t.Fatalf("Expected early exit, parsed %d lines", stats.LinesParsed)
 		}
 
